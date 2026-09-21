@@ -1,0 +1,6 @@
+{
+  "name": "قوى الأمن الداخلي - مركز الشمال",
+  "description": "قوى الأمن الداخلي - مركز الشمال: تطبيق ويب لإدارة وسجلات الموقوفين بدون إنترنت وحفظ البيانات محلياً مع التصدير والطباعة",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
