@@ -11,7 +11,10 @@ import {
   User, 
   Phone, 
   MapPin, 
-  FileText 
+  FileText,
+  Scale,
+  Shield,
+  CheckCircle2
 } from 'lucide-react';
 import { Detainee, DetaineePhotoIndex } from '../types';
 import { compressImage } from '../utils/imageCompressor';
@@ -37,6 +40,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
   const [formData, setFormData] = useState<{
     detentionDate: string;
     detentionCell: string;
+    status: 'موقوف' | 'أخلي سبيله';
+    detainedForUnit: string;
+    crimeType: string;
     firstName: string;
     fatherName: string;
     lastName: string;
@@ -53,6 +59,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
   }>({
     detentionDate: todayStr,
     detentionCell: '',
+    status: 'موقوف',
+    detainedForUnit: '',
+    crimeType: '',
     firstName: '',
     fatherName: '',
     lastName: '',
@@ -81,6 +90,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
       setFormData({
         detentionDate: detaineeToEdit.detentionDate || todayStr,
         detentionCell: detaineeToEdit.detentionCell || '',
+        status: detaineeToEdit.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف',
+        detainedForUnit: detaineeToEdit.detainedForUnit || '',
+        crimeType: detaineeToEdit.crimeType || '',
         firstName: detaineeToEdit.firstName || '',
         fatherName: detaineeToEdit.fatherName || '',
         lastName: detaineeToEdit.lastName || '',
@@ -105,6 +117,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
       setFormData({
         detentionDate: todayStr,
         detentionCell: '',
+        status: 'موقوف',
+        detainedForUnit: '',
+        crimeType: '',
         firstName: '',
         fatherName: '',
         lastName: '',
@@ -185,6 +200,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
       id: detaineeToEdit ? detaineeToEdit.id : `det-${Date.now()}`,
       detentionDate: formData.detentionDate,
       detentionCell: formData.detentionCell.trim(),
+      status: formData.status,
+      detainedForUnit: formData.detainedForUnit.trim(),
+      crimeType: formData.crimeType.trim(),
       firstName: formData.firstName.trim(),
       fatherName: formData.fatherName.trim(),
       lastName: formData.lastName.trim(),
@@ -244,13 +262,119 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           
-          {/* Section 1: بيانات التوقيف والنظارة */}
+          {/* Section 1: بيانات التوقيف والنظارة والوضع القانوني */}
           <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
               <Building2 className="w-4 h-4 text-blue-600" />
-              <span>1. بيانات التوقيف والنظارة وتاريخ الإدخال</span>
+              <span>1. بيانات التوقيف والوضع القانوني والنظارة</span>
             </h3>
 
+            {/* Row A: حالة الموقوف - موقوف لصالح - نوع الجرم */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 pb-4 border-b border-slate-200">
+              {/* حالة الموقوف: موقوف \ أخلي سبيله */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  حالة الموقوف <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: 'موقوف' })}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      formData.status === 'موقوف'
+                        ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-xs ring-1 ring-rose-300'
+                        : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${formData.status === 'موقوف' ? 'bg-rose-600 animate-pulse' : 'bg-slate-400'}`}></span>
+                    <span>موقوف</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: 'أخلي سبيله' })}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      formData.status === 'أخلي سبيله'
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-xs ring-1 ring-emerald-300'
+                        : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <CheckCircle2 className={`w-3.5 h-3.5 ${formData.status === 'أخلي سبيله' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span>أخلي سبيله</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* موقوف لصالح: (اختيار اسم القطعة) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  موقوف لصالح (اسم القطعة)
+                </label>
+                <input
+                  type="text"
+                  list="units-list"
+                  value={formData.detainedForUnit}
+                  onChange={(e) => setFormData({ ...formData, detainedForUnit: e.target.value })}
+                  placeholder="اختر أو اكتب اسم القطعة..."
+                  className="w-full py-2 px-3 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <datalist id="units-list">
+                  <option value="فصيلة أبي سمرا" />
+                  <option value="فصيلة المينا" />
+                  <option value="فصيلة البداوي" />
+                  <option value="فصيلة القبة" />
+                  <option value="فصيلة التل" />
+                  <option value="فصيلة زغرتا" />
+                  <option value="فصيلة أميون" />
+                  <option value="فصيلة المنية" />
+                  <option value="فصيلة حلبا" />
+                  <option value="مخفر مشتى حسن" />
+                  <option value="مخفر العبدة" />
+                  <option value="نظارة تجمع فصائل طرابلس" />
+                  <option value="مفرزة طرابلس القضائية" />
+                  <option value="شعبة المعلومات" />
+                  <option value="مكتب مكافحة المخدرات الإقليمي" />
+                  <option value="مفرزة استقصاء الشمال" />
+                  <option value="مفرزة سير طرابلس" />
+                  <option value="مفرزة سير حلبا" />
+                  <option value="مفرزة سير أميون" />
+                  <option value="سرية طرابلس الإقليمية" />
+                  <option value="مفرزة سير زغرتا" />
+                  <option value="فصيلة مشمش" />
+                </datalist>
+              </div>
+
+              {/* نوع الجرم: (كتابة الجرم) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  نوع الجرم (كتابة الجرم)
+                </label>
+                <input
+                  type="text"
+                  list="crimes-list"
+                  value={formData.crimeType}
+                  onChange={(e) => setFormData({ ...formData, crimeType: e.target.value })}
+                  placeholder="اكتب الجرم (مثال: سرقة، مخدرات، إطلاق نار)..."
+                  className="w-full py-2 px-3 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <datalist id="crimes-list">
+                  <option value="سرقة" />
+                  <option value="ترويج وتعاطي مخدرات" />
+                  <option value="إطلاق نار ونقل سلاح حربي دون ترخيص" />
+                  <option value="دخول البلاد خلسة وإقامة غير مشروعة" />
+                  <option value="تزوير واستعمال مزور" />
+                  <option value="شكوى ضرب وإيذاء" />
+                  <option value="نصب واحتيال" />
+                  <option value="شيك دون رصيد" />
+                  <option value="مخالفة تدابير وقوانين أمنية" />
+                  <option value="مذكرة إحضار / توقيف غيابية" />
+                  <option value="إشتباه والتحقق من الهوية" />
+                  <option value="قتل" />
+                </datalist>
+              </div>
+            </div>
+
+            {/* Row B: تاريخ التوقيف - نظارة التوقيف - تاريخ تدوين المعلومة */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Detention Date */}
               <div>
@@ -282,7 +406,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                   list="cells-list"
                   value={formData.detentionCell}
                   onChange={(e) => setFormData({ ...formData, detentionCell: e.target.value })}
-                  placeholder="مثال: نظارة التحقيق المركزية"
+                  placeholder="مثال: نظارة مخفر العبدة"
                   className={`w-full py-2 px-3 bg-white border rounded-lg text-sm focus:outline-none focus:ring-2 ${
                     errors.detentionCell ? 'border-red-500 focus:ring-red-200' : 'border-slate-300 focus:ring-blue-500'
                   }`}
@@ -291,12 +415,14 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                   {existingCells.map((c) => (
                     <option key={c} value={c} />
                   ))}
-                  <option value="نظارة التحقيق المركزية - رقم 1" />
-                  <option value="نظارة التحقيق المركزية - رقم 2" />
-                  <option value="نظارة التوقيف الاحترازي - جناح أ" />
-                  <option value="نظارة التوقيف الاحترازي - جناح ب" />
-                  <option value="نظارة النساء - قسم الحراسة الخاصة" />
-                  <option value="نظارة الأحداث" />
+                  <option value="فصيلة أبي سمرا" />
+                  <option value="فصيلة المينا" />
+                  <option value="فصيلة البداوي" />
+                  <option value="فصيلة القبة" />
+                  <option value="نظارة تجمع فصائل طرابلس" />
+                  <option value="نظارة النساء - مخفر مشتى حسن" />
+                  <option value="نظارة الأحداث - مخفر مشتى حسن" />
+                  <option value="مخفر العبدة" />
                 </datalist>
                 {errors.detentionCell && (
                   <p className="text-[11px] text-red-500 mt-1">{errors.detentionCell}</p>
@@ -363,7 +489,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Last Name / Family */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  5. الشهرة (الكنية / العائلة) <span className="text-red-500">*</span>
+                  5. الشهرة ( العائلة) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"

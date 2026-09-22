@@ -6,6 +6,9 @@ export interface Detainee {
   id: string; // Unique identifier
   detentionDate: string; // 1. تاريخ التوقيف (YYYY-MM-DD)
   detentionCell: string; // 2. نظارة التوقيف (Detention Cell / Lockup)
+  status: 'موقوف' | 'أخلي سبيله'; // حالة الموقوف (موقوف / أخلي سبيله)
+  detainedForUnit: string; // موقوف لصالح (اختيار اسم القطعة)
+  crimeType: string; // نوع الجرم (كتابة الجرم)
   firstName: string; // 3. اسم الموقوف (First Name)
   fatherName: string; // 4. اسم الاب (Father's Name)
   lastName: string; // 5. الشهرة (Last Name / Family Name)
@@ -28,6 +31,8 @@ export type DetaineePhotoIndex = 0 | 1 | 2;
 export interface DetaineeFilters {
   searchQuery: string;
   detentionCell: string;
+  status: string; // 'all' | 'موقوف' | 'أخلي سبيله'
+  detainedForUnit: string;
   nationality: string;
   gender: string;
   startDate: string;
@@ -39,6 +44,9 @@ export type SortField =
   | 'firstName' 
   | 'lastName' 
   | 'detentionCell' 
+  | 'status'
+  | 'detainedForUnit'
+  | 'crimeType'
   | 'nationality' 
   | 'recordDate'
   | 'createdAt';

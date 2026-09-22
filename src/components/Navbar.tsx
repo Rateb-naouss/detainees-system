@@ -42,14 +42,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-white">قوى الأمن الداخلي - مركز الشمال</h1>
-                <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-0.5 rounded-full font-medium border border-emerald-500/30 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  محلي (LocalStorage)
-                </span>
+                <h1 className="text-xl font-bold tracking-tight text-white">قوى الأمن الداخلي - مركز القيادة والتحكم</h1>
+               
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                نظام إدارة وسجلات الموقوفين والنظارات - السجل الأمني الموحد
+                 سجلات   الموقوفين في النظارات
               </p>
             </div>
           </div>

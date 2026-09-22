@@ -73,8 +73,8 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
         <table className="w-full text-right border-collapse">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
-              <th className="py-3.5 px-4 w-12 text-center">ت</th>
-              <th className="py-3.5 px-4 w-16 text-center">الصورة</th>
+              <th className="py-3.5 px-3 w-10 text-center">ت</th>
+              <th className="py-3.5 px-3 w-14 text-center">الصورة</th>
               <th 
                 onClick={() => handleSort('firstName')}
                 className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition select-none"
@@ -85,8 +85,26 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                 </div>
               </th>
               <th 
+                onClick={() => handleSort('status')}
+                className="py-3.5 px-3 cursor-pointer hover:bg-slate-100 transition select-none text-center"
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <span>حالة الموقوف</span>
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+              </th>
+              <th 
+                onClick={() => handleSort('detainedForUnit')}
+                className="py-3.5 px-3 cursor-pointer hover:bg-slate-100 transition select-none"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>موقوف لصالح</span>
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+              </th>
+              <th 
                 onClick={() => handleSort('detentionCell')}
-                className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition select-none"
+                className="py-3.5 px-3 cursor-pointer hover:bg-slate-100 transition select-none"
               >
                 <div className="flex items-center gap-1.5">
                   <span>نظارة التوقيف</span>
@@ -95,32 +113,31 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
               </th>
               <th 
                 onClick={() => handleSort('detentionDate')}
-                className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition select-none"
+                className="py-3.5 px-3 cursor-pointer hover:bg-slate-100 transition select-none"
               >
                 <div className="flex items-center gap-1.5">
                   <span>تاريخ التوقيف</span>
                   <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                 </div>
               </th>
-              <th className="py-3.5 px-4">اسم الأم</th>
               <th 
                 onClick={() => handleSort('nationality')}
-                className="py-3.5 px-4 cursor-pointer hover:bg-slate-100 transition select-none"
+                className="py-3.5 px-3 cursor-pointer hover:bg-slate-100 transition select-none"
               >
                 <div className="flex items-center gap-1.5">
                   <span>الجنسية / الجنس</span>
                   <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                 </div>
               </th>
-              <th className="py-3.5 px-4">رقم الهاتف</th>
-              <th className="py-3.5 px-4 text-center w-36">الإجراءات والخيارات</th>
+              <th className="py-3.5 px-3">رقم الهاتف</th>
+              <th className="py-3.5 px-3 text-center w-32">الإجراءات</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-200 text-sm text-slate-700">
             {paginatedDetainees.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-12 text-center text-slate-400">
+                <td colSpan={10} className="py-12 text-center text-slate-400">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <User className="w-10 h-10 text-slate-300" />
                     <p className="text-base font-medium text-slate-600">لم يتم العثور على أي سجلات موقوفين مطابقة</p>
@@ -141,12 +158,12 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                     className="hover:bg-blue-50/40 transition group"
                   >
                     {/* Index */}
-                    <td className="py-3 px-4 text-center text-xs font-mono text-slate-400">
+                    <td className="py-3 px-3 text-center text-xs font-mono text-slate-400">
                       {globalIndex}
                     </td>
 
                     {/* Photo Thumbnail */}
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-3 text-center">
                       <div 
                         onClick={() => onViewProfile(d)}
                         className="relative w-11 h-13 mx-auto rounded-md overflow-hidden bg-slate-100 border border-slate-300 shadow-2xs cursor-pointer group-hover:ring-2 group-hover:ring-blue-500 transition"
@@ -172,40 +189,64 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Full Name & Birth Info */}
+                    {/* Full Name, Crime, and Birth Info */}
                     <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">
+                      <div className="font-bold text-slate-900 text-sm">
                         {d.firstName} {d.fatherName} {d.lastName}
                       </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                        <span>ولادة: {d.placeOfBirth || 'غير محدد'}</span>
-                        {d.dateOfBirth && <span>({d.dateOfBirth})</span>}
+                      {d.crimeType && (
+                        <div className="inline-block mt-0.5 px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-medium border border-slate-200">
+                          الجرم: {d.crimeType}
+                        </div>
+                      )}
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span>اسم الأم: {d.motherName || 'غير مسجل'}</span>
+                        <span>•</span>
+                        <span>ولادة: {d.placeOfBirth || '---'} {d.dateOfBirth ? `(${d.dateOfBirth})` : ''}</span>
                       </div>
                     </td>
 
+                    {/* Status Badge: موقوف \ أخلي سبيله */}
+                    <td className="py-3 px-3 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                        d.status === 'أخلي سبيله'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                          : 'bg-rose-50 text-rose-700 border border-rose-300'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${d.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                        <span>{d.status || 'موقوف'}</span>
+                      </span>
+                    </td>
+
+                    {/* Detained for Unit: موقوف لصالح */}
+                    <td className="py-3 px-3 text-xs text-slate-800 font-semibold">
+                      {d.detainedForUnit ? (
+                        <span className="inline-block bg-blue-50/70 text-blue-900 px-2 py-0.5 rounded border border-blue-200">
+                          {d.detainedForUnit}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">---</span>
+                      )}
+                    </td>
+
                     {/* Detention Cell */}
-                    <td className="py-3 px-4">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 text-xs font-medium border border-amber-200">
-                        <Building2 className="w-3.5 h-3.5 text-amber-600" />
-                        <span>{d.detentionCell || 'غير محددة'}</span>
+                    <td className="py-3 px-3">
+                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 text-amber-900 text-xs font-medium border border-amber-200">
+                        <Building2 className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span className="truncate max-w-36">{d.detentionCell || 'غير محددة'}</span>
                       </div>
                     </td>
 
                     {/* Detention Date */}
-                    <td className="py-3 px-4 font-mono text-xs text-slate-800 font-medium">
+                    <td className="py-3 px-3 font-mono text-xs text-slate-800 font-medium">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>{d.detentionDate || '---'}</span>
                       </div>
                     </td>
 
-                    {/* Mother's Name */}
-                    <td className="py-3 px-4 text-xs text-slate-600">
-                      {d.motherName || 'غير مسجل'}
-                    </td>
-
                     {/* Nationality & Gender */}
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-3">
                       <div className="text-xs font-semibold text-slate-800">
                         {d.nationality || 'غير محدد'}
                       </div>
@@ -215,7 +256,7 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                     </td>
 
                     {/* Phone */}
-                    <td className="py-3 px-4 text-xs font-mono text-slate-700" dir="ltr">
+                    <td className="py-3 px-3 text-xs font-mono text-slate-700" dir="ltr">
                       {d.phoneNumber ? d.phoneNumber : '---'}
                     </td>
 

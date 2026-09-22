@@ -7,7 +7,10 @@ export const INITIAL_DETAINEES: Detainee[] = [
   {
     id: 'det-1001',
     detentionDate: '2026-09-18',
-    detentionCell: 'نظارة التحقيق المركزية - رقم 3',
+    detentionCell: 'نظارة تجمع فصائل طرابلس',
+    status: 'موقوف',
+    detainedForUnit: 'فصيلة أبي سمرا',
+    crimeType: 'إشتباه بسرقة موصوفة',
     firstName: 'أحمد',
     fatherName: 'محمود',
     lastName: 'الخالد',
@@ -31,7 +34,10 @@ export const INITIAL_DETAINEES: Detainee[] = [
   {
     id: 'det-1002',
     detentionDate: '2026-09-20',
-    detentionCell: 'نظارة التوقيف الاحترازي - جناح ب',
+    detentionCell: 'فصيلة المينا',
+    status: 'موقوف',
+    detainedForUnit: 'مفرزة طرابلس القضائية',
+    crimeType: 'سرقة مركبة ونقل سلاح دون ترخيص',
     firstName: 'كريم',
     fatherName: 'سامي',
     lastName: 'المنصور',
@@ -55,7 +61,10 @@ export const INITIAL_DETAINEES: Detainee[] = [
   {
     id: 'det-1003',
     detentionDate: '2026-09-21',
-    detentionCell: 'نظارة النساء - قسم الحراسة الخاصة',
+    detentionCell: 'نظارة النساء - مخفر مشتى حسن',
+    status: 'أخلي سبيله',
+    detainedForUnit: 'شعبة المعلومات',
+    crimeType: 'التحقق من هوية وأوراق ثبوتية',
     firstName: 'مريم',
     fatherName: 'حسين',
     lastName: 'النجار',
@@ -72,7 +81,7 @@ export const INITIAL_DETAINEES: Detainee[] = [
       'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="360" viewBox="0 0 300 360" fill="%23f1f5f9"><rect width="300" height="360" fill="%23fce7f3"/><ellipse cx="140" cy="130" rx="42" ry="50" fill="%23f472b6"/><path d="M60 290 C60 210, 210 205, 230 290 Z" fill="%23f472b6"/><text x="150" y="325" font-family="sans-serif" font-size="16" font-weight="bold" fill="%239d174d" text-anchor="middle">جانبية يمنى</text></svg>',
       'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="360" viewBox="0 0 300 360" fill="%23f1f5f9"><rect width="300" height="360" fill="%23fce7f3"/><ellipse cx="160" cy="130" rx="42" ry="50" fill="%23f472b6"/><path d="M70 290 C90 205, 240 210, 240 290 Z" fill="%23f472b6"/><text x="150" y="325" font-family="sans-serif" font-size="16" font-weight="bold" fill="%239d174d" text-anchor="middle">جانبية يسرى</text></svg>'
     ],
-    notes: 'موقوفة للتحقق من هوية وأوراق ثبوتية. تم إبلاغ ذويها هاتفياً.',
+    notes: 'موقوفة للتحقق من هوية وأوراق ثبوتية. تم إخلاء سبيلها بسند إقامة بناءً لإشارة النيابة العامة الاستئنافية.',
     createdAt: '2026-09-21T09:30:00Z',
     updatedAt: '2026-09-21T09:30:00Z'
   }
@@ -90,7 +99,13 @@ export function loadDetainees(): Detainee[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed;
+      // Ensure backwards compatibility with newly added fields
+      return parsed.map((item) => ({
+        ...item,
+        status: item.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف',
+        detainedForUnit: item.detainedForUnit || '',
+        crimeType: item.crimeType || '',
+      }));
     }
     return INITIAL_DETAINEES;
   } catch (err) {

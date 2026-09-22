@@ -18,6 +18,9 @@ export function exportDetaineesToExcel(detainees: Detainee[], filenamePrefix = '
 
     return {
       'ت': index + 1,
+      'حالة الموقوف': d.status || 'موقوف',
+      'موقوف لصالح': d.detainedForUnit || '',
+      'نوع الجرم': d.crimeType || '',
       'تاريخ التوقيف': d.detentionDate || '',
       'نظارة التوقيف': d.detentionCell || '',
       'اسم الموقوف': d.firstName || '',
@@ -45,6 +48,9 @@ export function exportDetaineesToExcel(detainees: Detainee[], filenamePrefix = '
   // Set column widths
   const colWidths = [
     { wch: 5 },  // ت
+    { wch: 14 }, // حالة الموقوف
+    { wch: 22 }, // موقوف لصالح
+    { wch: 24 }, // نوع الجرم
     { wch: 14 }, // تاريخ التوقيف
     { wch: 28 }, // نظارة التوقيف
     { wch: 16 }, // اسم الموقوف

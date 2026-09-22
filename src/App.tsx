@@ -20,6 +20,8 @@ export default function App() {
   const [filters, setFilters] = useState<DetaineeFilters>({
     searchQuery: '',
     detentionCell: '',
+    status: '',
+    detainedForUnit: '',
     nationality: '',
     gender: '',
     startDate: '',
@@ -70,6 +72,9 @@ export default function App() {
           arabicIncludes(d.fatherName, q) ||
           arabicIncludes(d.lastName, q) ||
           arabicIncludes(fullName, q) ||
+          arabicIncludes(d.status, q) ||
+          arabicIncludes(d.detainedForUnit, q) ||
+          arabicIncludes(d.crimeType, q) ||
           arabicIncludes(d.motherName, q) ||
           arabicIncludes(d.detentionCell, q) ||
           arabicIncludes(d.nationality, q) ||
@@ -86,22 +91,32 @@ export default function App() {
         if (!matchesAnyField) return false;
       }
 
-      // 2. Detention Cell Filter
+      // 2. Status Filter (موقوف \ أخلي سبيله)
+      if (filters.status && d.status !== filters.status) {
+        return false;
+      }
+
+      // 3. Detained For Unit Filter (موقوف لصالح القطعة)
+      if (filters.detainedForUnit && d.detainedForUnit !== filters.detainedForUnit) {
+        return false;
+      }
+
+      // 4. Detention Cell Filter
       if (filters.detentionCell && d.detentionCell !== filters.detentionCell) {
         return false;
       }
 
-      // 3. Nationality Filter
+      // 5. Nationality Filter
       if (filters.nationality && d.nationality !== filters.nationality) {
         return false;
       }
 
-      // 4. Gender Filter
+      // 6. Gender Filter
       if (filters.gender && d.gender !== filters.gender) {
         return false;
       }
 
-      // 5. Date Range Filter
+      // 7. Date Range Filter
       if (filters.startDate && d.detentionDate && d.detentionDate < filters.startDate) {
         return false;
       }
@@ -167,6 +182,8 @@ export default function App() {
     setFilters({
       searchQuery: '',
       detentionCell: '',
+      status: '',
+      detainedForUnit: '',
       nationality: '',
       gender: '',
       startDate: '',
@@ -231,7 +248,7 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>
-            نظام إدارة الموقوفين - مصمم للعمل محلياً على الحاسوب دون الحاجة لاتصال بالإنترنت (Offline First)
+            سجل الموقوفين - مصمم للعمل محلياً على الحاسوب دون الحاجة لاتصال بالإنترنت (Offline First) - إعداد الملازم الأول نعوس
           </p>
           <p className="font-mono text-slate-400">
             الحفظ التلقائي في LocalStorage مفعل

@@ -18,9 +18,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   detainees,
   filteredDetainees,
 }) => {
-  // Extract unique cell names and nationalities for dropdown suggestions
+  // Extract unique cell names, units, and nationalities for dropdown suggestions
   const cellOptions = Array.from(
     new Set(detainees.map((d) => d.detentionCell).filter(Boolean))
+  ).sort();
+
+  const unitOptions = Array.from(
+    new Set(detainees.map((d) => d.detainedForUnit).filter(Boolean))
   ).sort();
 
   const nationalityOptions = Array.from(
@@ -30,6 +34,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const isFiltered =
     filters.searchQuery.trim() !== '' ||
     filters.detentionCell !== '' ||
+    filters.status !== '' ||
+    filters.detainedForUnit !== '' ||
     filters.nationality !== '' ||
     filters.gender !== '' ||
     filters.startDate !== '' ||
@@ -93,8 +99,49 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       </div>
 
       {/* Second row: Granular Filter Dropdowns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100">
         
+        {/* Status Filter: موقوف \ أخلي سبيله */}
+        <div>
+          <label htmlFor="filter-status" className="block text-xs font-medium text-slate-600 mb-1">
+            حالة الموقوف:
+          </label>
+          <select
+            id="filter-status"
+            value={filters.status}
+            onChange={(e) =>
+              onFilterChange({ ...filters, status: e.target.value })
+            }
+            className="w-full py-1.5 px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">جميع الحالات</option>
+            <option value="موقوف">موقوف</option>
+            <option value="أخلي سبيله">أخلي سبيله</option>
+          </select>
+        </div>
+
+        {/* Detained For Unit: موقوف لصالح */}
+        <div>
+          <label htmlFor="filter-detained-for" className="block text-xs font-medium text-slate-600 mb-1">
+            موقوف لصالح (القطعة):
+          </label>
+          <select
+            id="filter-detained-for"
+            value={filters.detainedForUnit}
+            onChange={(e) =>
+              onFilterChange({ ...filters, detainedForUnit: e.target.value })
+            }
+            className="w-full py-1.5 px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">جميع القطع</option>
+            {unitOptions.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Cell Filter */}
         <div>
           <label htmlFor="filter-cell" className="block text-xs font-medium text-slate-600 mb-1">

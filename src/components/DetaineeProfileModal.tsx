@@ -94,7 +94,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                 بطاقة الموقوف: {detainee.firstName} {detainee.fatherName} {detainee.lastName}
               </h2>
               <p className="text-xs text-slate-400">
-                قوى الأمن الداخلي - مركز الشمال | تصدير وطباعة رسمية
+                قوى الأمن الداخلي - مركز القيادة والتحكم
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
             className="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-xs border border-slate-200 print:border-none print:shadow-none print:p-0"
           >
             
-            {/* Official Header with ISF Emblem Logo and "قوى الأمن الداخلي مركز الشمال" */}
+            {/* Official Header with ISF Emblem Logo and "قوى الأمن الداخلي مركز القيادة والتحكم" */}
             <div className="border-b-2 border-slate-900 pb-5 mb-6">
               
               <div className="flex items-center justify-between mb-2">
@@ -199,6 +199,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                   <p className="text-slate-600">وزارة الداخلية والبلديات</p>
                   <p className="text-slate-600">المديرية العامة لقوى الأمن الداخلي</p>
                   <p className="font-bold text-blue-900 mt-0.5">قيادة منطقة الشمال الإقليمية</p>
+                  <p className="font-bold text-blue-900 mt-0.5">مركز القيادة والتحكم</p>
                 </div>
 
                 {/* Center ISF Logo & Title */}
@@ -214,10 +215,10 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                     />
                   </div>
                   <h1 className="text-lg sm:text-xl font-black text-slate-950 tracking-wide">
-                    قوى الأمن الداخلي مركز الشمال
+                    ISF
                   </h1>
                   <span className="mt-1 inline-block bg-slate-900 text-white text-[11px] font-bold px-3 py-0.5 rounded-md">
-                    استمارة وبطاقة معلومات موقوف
+                     بطاقة معلومات موقوف
                   </span>
                 </div>
 
@@ -225,24 +226,47 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                 <div className="text-left text-xs font-mono text-slate-600" dir="ltr">
                   <div>Date: {new Date().toISOString().slice(0, 10)}</div>
                   <div className="text-[10px] text-slate-500 mt-1">ID: {detainee.id}</div>
-                  <div className="text-[10px] font-bold text-emerald-700 mt-1">نسخة رسمية معتمدة</div>
                 </div>
               </div>
 
             </div>
 
-            {/* Detention Status Banner */}
-            <div className="bg-slate-100 rounded-lg p-3 mb-6 border border-slate-300 flex flex-wrap items-center justify-between gap-3 text-xs">
+            {/* Detention Status & Legal Case Banner */}
+            <div className="bg-slate-100 rounded-lg p-3.5 mb-6 border border-slate-300 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 font-medium">حالة الموقوف:</span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  detainee.status === 'أخلي سبيله'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-rose-100 text-rose-800 border border-rose-300'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${detainee.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                  <span>{detainee.status || 'موقوف'}</span>
+                </span>
+              </div>
+
               <div>
-                <span className="text-slate-600">نظارة التوقيف: </span>
+                <span className="text-slate-600 font-medium">موقوف لصالح: </span>
+                <strong className="text-slate-950 font-bold">{detainee.detainedForUnit || '---'}</strong>
+              </div>
+
+              <div>
+                <span className="text-slate-600 font-medium">نوع الجرم: </span>
+                <strong className="text-slate-950 font-bold">{detainee.crimeType || '---'}</strong>
+              </div>
+
+              <div>
+                <span className="text-slate-600 font-medium">نظارة التوقيف: </span>
                 <strong className="text-slate-950 text-sm">{detainee.detentionCell || 'غير محددة'}</strong>
               </div>
+
               <div>
-                <span className="text-slate-600">تاريخ التوقيف: </span>
+                <span className="text-slate-600 font-medium">تاريخ التوقيف: </span>
                 <strong className="text-slate-950 font-mono text-sm">{detainee.detentionDate || '---'}</strong>
               </div>
+
               <div>
-                <span className="text-slate-600">تاريخ تدوين المعلومة: </span>
+                <span className="text-slate-600 font-medium">تاريخ تدوين المعلومة: </span>
                 <strong className="text-slate-950 font-mono">{detainee.recordDate || '---'}</strong>
               </div>
             </div>
@@ -250,7 +274,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
             {/* 3 Mugshot / Profile Photos Section */}
             <div className="mb-6">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5 border-r-4 border-blue-700 pr-2">
-                <span>صور الموقوف (الصور الجنائية والشخصية الثلاث)</span>
+                <span>صور الموقوف</span>
               </h3>
               
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -288,12 +312,43 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
             {/* Comprehensive 15-Field Record Table */}
             <div className="mb-6">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5 border-r-4 border-slate-800 pr-2">
-                <span>البيانات الشخصية والمعلومات التفصيلية للموقوف</span>
+                <span>البيانات الشخصية للموقوف</span>
               </h3>
 
               <div className="border border-slate-300 rounded-lg overflow-hidden text-xs">
                 <table className="w-full text-right border-collapse">
                   <tbody>
+                    {/* Legal Status & Crime Row */}
+                    <tr className="border-b border-slate-200">
+                      <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
+                        حالة الموقوف
+                      </td>
+                      <td className="p-2.5 text-slate-800 w-1/4 border-l border-slate-200">
+                        <span className={`inline-flex items-center gap-1 font-bold ${
+                          detainee.status === 'أخلي سبيله' ? 'text-emerald-700' : 'text-rose-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${detainee.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                          {detainee.status || 'موقوف'}
+                        </span>
+                      </td>
+                      <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
+                        موقوف لصالح (القطعة)
+                      </td>
+                      <td className="p-2.5 text-slate-950 font-bold w-1/4">
+                        {detainee.detainedForUnit || 'غير محددة'}
+                      </td>
+                    </tr>
+
+                    {/* Crime Type Row */}
+                    <tr className="border-b border-slate-200">
+                      <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
+                        نوع الجرم
+                      </td>
+                      <td className="p-2.5 text-slate-950 font-bold text-sm w-3/4" colSpan={3}>
+                        {detainee.crimeType || 'غير مدون'}
+                      </td>
+                    </tr>
+
                     {/* Row 1 */}
                     <tr className="border-b border-slate-200">
                       <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
@@ -313,7 +368,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                         {detainee.fatherName || 'غير مسجل'}
                       </td>
                       <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
-                        الشهرة (العائلة)
+                        الشهرة
                       </td>
                       <td className="p-2.5 text-slate-800 w-1/4">
                         {detainee.lastName || 'غير مسجل'}
@@ -399,33 +454,8 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
 
             {/* Official Signatures & Verification Area */}
             <div className="mt-8 pt-6 border-t-2 border-slate-300 print-page-break">
-              <div className="grid grid-cols-3 gap-6 text-center text-xs">
-                
-                {/* Officer in charge */}
-                <div className="border border-slate-300 rounded p-3 bg-slate-50 min-h-24 flex flex-col justify-between">
-                  <span className="font-bold text-slate-800">الضابط المسؤول عن النظارة</span>
-                  <div className="border-b border-dashed border-slate-400 mt-8 mb-1"></div>
-                  <span className="text-[10px] text-slate-500">التوقيع والرتبة</span>
-                </div>
-
-                {/* Detainee signature / fingerprint */}
-                <div className="border border-slate-300 rounded p-3 bg-slate-50 min-h-24 flex flex-col justify-between">
-                  <span className="font-bold text-slate-800">بصمة وتوقيع الموقوف</span>
-                  <div className="border-b border-dashed border-slate-400 mt-8 mb-1"></div>
-                  <span className="text-[10px] text-slate-500">أخذت المعاملة بحضوره</span>
-                </div>
-
-                {/* Official Stamp */}
-                <div className="border border-slate-300 rounded p-3 bg-slate-50 min-h-24 flex flex-col justify-between">
-                  <span className="font-bold text-slate-800">خاتم النظارة الرسمي</span>
-                  <div className="border-b border-dashed border-slate-400 mt-8 mb-1"></div>
-                  <span className="text-[10px] text-slate-500">قوى الأمن الداخلي - مركز الشمال</span>
-                </div>
-
-              </div>
-
               <div className="text-center text-[10px] text-slate-400 mt-4 font-mono">
-                قوى الأمن الداخلي - مركز الشمال | تم استخراج هذا التقرير بتاريخ {todayArabic}
+                قوى الأمن الداخلي - مركز القيادة والتحكم | تم استخراج هذا التقرير بتاريخ {todayArabic}
               </div>
             </div>
 
@@ -436,8 +466,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
         {/* Bottom Bar */}
         <div className="no-print px-6 py-3 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
           <span className="text-xs text-slate-500">
-            💡 يمكنك تنزيل البطاقة كملف PDF مباشرة لجهازك، أو الضغط على طباعة فورية.
-          </span>
+            إعداد الملازم الأول نعوس </span>
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-lg transition cursor-pointer"

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Building2, CalendarDays, UserCheck, Flag } from 'lucide-react';
+import { Users, Building2, CalendarDays, UserCheck, CheckCircle2, UserX } from 'lucide-react';
 import { Detainee } from '../types';
 
 interface StatsCardsProps {
@@ -8,6 +8,10 @@ interface StatsCardsProps {
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
   const total = detainees.length;
+
+  // Active / Released Status
+  const currentlyDetained = detainees.filter(d => d.status !== 'أخلي سبيله').length;
+  const releasedCount = detainees.filter(d => d.status === 'أخلي سبيله').length;
 
   // Males & Females
   const malesCount = detainees.filter(d => d.gender === 'ذكر').length;
@@ -27,14 +31,26 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 no-print">
-      {/* Total Detainees */}
+      {/* Total & Current Status */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            إجمالي الموقوفين
+            إجمالي السجلات والحالة
           </p>
-          <h3 className="text-2xl font-bold text-slate-800">{total}</h3>
-          <p className="text-xs text-slate-400 mt-1">سجلات مسجلة بالنظام</p>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-2xl font-bold text-slate-900">{total}</h3>
+            <span className="text-xs text-slate-400">سجل</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 text-xs">
+            <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+              {currentlyDetained} موقوف
+            </span>
+            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              {releasedCount} أخلي سبيله
+            </span>
+          </div>
         </div>
         <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
           <Users className="w-6 h-6" />
@@ -56,7 +72,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
             نسبة الذكور {total > 0 ? Math.round((malesCount / total) * 100) : 0}%
           </p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-slate-50 text-slate-700 flex items-center justify-center">
           <UserCheck className="w-6 h-6" />
         </div>
       </div>
