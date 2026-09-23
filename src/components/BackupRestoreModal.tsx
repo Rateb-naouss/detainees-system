@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   X, 
   Download, 
@@ -7,10 +7,19 @@ import {
   Database, 
   HardDrive, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  FileCode,
+  Trash2
 } from 'lucide-react';
 import { Detainee } from '../types';
-import { downloadBackupJSON, importBackupJSON, INITIAL_DETAINEES, STORAGE_KEY } from '../utils/storage';
+import { downloadBackupJSON, importBackupJSON } from '../utils/storage';
+import { 
+  downloadSQLiteDB, 
+  getDatabaseInfo, 
+  resetSQLiteDB, 
+  importJSONToSQLite, 
+  DatabaseInfo 
+} from '../utils/api';
 
 interface BackupRestoreModalProps {
   isOpen: boolean;
@@ -27,14 +36,25 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [dbInfo, setDbInfo] = useState<DatabaseInfo | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      getDatabaseInfo().then((info) => {
+        if (info) setDbInfo(info);
+      });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Approximate storage calculation
-  const rawStorage = localStorage.getItem(STORAGE_KEY) || '';
-  const storageKB = Math.round((rawStorage.length * 2) / 1024);
+  const handleDownloadSQLite = () => {
+    downloadSQLiteDB();
+    setStatusMessage({ text: 'جاري تنزيل ملف قاعدة بيانات SQLite الحقيقي (detainees.db)...' });
+  };
 
-  const handleExport = () => {
+  const handleExportJSON = () => {
     downloadBackupJSON(detainees);
     setStatusMessage({ text: 'تم تنزيل النسخة الاحتياطية بنجاح بصيغة JSON' });
   };
@@ -50,8 +70,11 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
         return;
       }
 
+      // Also persist to SQLite backend
+      await importJSONToSQLite(importedRecords);
       onUpdateDetainees(importedRecords);
-      setStatusMessage({ text: `تم استعادة وتحديث ${importedRecords.length} سجلاً بنجاح!` });
+      setStatusMessage({ text: `تم استعادة وتحديث ${importedRecords.length} سجلاً في قاعدة بيانات SQLite بنجاح!` });
+      getDatabaseInfo().then(setDbInfo);
     } catch (err: unknown) {
       setStatusMessage({ 
         text: err instanceof Error ? err.message : 'فشل استيراد النسخة الاحتياطية', 
@@ -62,10 +85,23 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
     }
   };
 
-  const handleResetToSample = () => {
-    if (window.confirm('هل أنت متأكد من رغبتك في إعادة ضبط السجلات واستعادة البيانات النموذجية الأولية؟')) {
-      onUpdateDetainees(INITIAL_DETAINEES);
-      setStatusMessage({ text: 'تمت استعادة السجلات النموذجية الافتراضية بنجاح' });
+  const handleResetDatabase = async () => {
+    if (window.confirm('تحذير: هل أنت متأكد من رغبتك في تصفير قاعدة البيانات بالكامل؟ سيتم حذف جميع الموقوفين والصور المخزنة والبدء بقاعدة بيانات جديدة وفارغة.')) {
+      setIsResetting(true);
+      try {
+        const res = await resetSQLiteDB();
+        if (res.success) {
+          onUpdateDetainees([]);
+          setStatusMessage({ text: 'تم تصفير قاعدة بيانات SQLite وحذف السجلات بنجاح. قاعدة البيانات جاهزة لاستقبال بياناتكم الجديدة.' });
+          getDatabaseInfo().then(setDbInfo);
+        } else {
+          setStatusMessage({ text: res.error || 'تعذر تصفير قاعدة البيانات', isError: true });
+        }
+      } catch (e: unknown) {
+        setStatusMessage({ text: 'حدث خطأ أثناء محاولة التصفير', isError: true });
+      } finally {
+        setIsResetting(false);
+      }
     }
   };
 
@@ -80,8 +116,8 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
               <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">إدارة النسخ الاحتياطي والبيانات</h3>
-              <p className="text-xs text-slate-500">حفظ ونقل واسترجاع السجلات المحلية للحاسوب</p>
+              <h3 className="text-base font-bold text-slate-900">إدارة قاعدة البيانات (SQLite) والنسخ الاحتياطي</h3>
+              <p className="text-xs text-slate-500">حفظ ونقل وتحميل ملف قاعدة البيانات detainees.db</p>
             </div>
           </div>
           <button
@@ -92,17 +128,35 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
           </button>
         </div>
 
-        {/* Storage status bar */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-              <HardDrive className="w-4 h-4 text-slate-500" />
-              <span>مساحة التخزين المحلية المستخدمة:</span>
+        {/* SQLite Database status card */}
+        <div className="bg-slate-900 text-slate-100 border border-slate-800 rounded-xl p-4 mb-5">
+          <div className="flex items-center justify-between text-xs mb-3 pb-2 border-b border-slate-800">
+            <span className="font-semibold flex items-center gap-2 text-emerald-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              قاعدة بيانات: SQLite 3 النشطة
             </span>
-            <span className="font-mono text-slate-800 font-bold">{storageKB} كيلوبايت</span>
+            <span className="font-mono bg-slate-800 px-2 py-0.5 rounded text-slate-300">
+              {dbInfo?.dbFile || 'detainees.db'}
+            </span>
           </div>
-          <p className="text-[11px] text-slate-500">
-            النظام يعمل بدون إنترنت على متصفح الحاسوب. لحماية بياناتك من الحذف المفاجئ للمتصفح، يُنصح بتصدير نسخة احتياطية بانتظام.
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span className="text-slate-400 block text-[11px]">حجم ملف قاعدة البيانات:</span>
+              <span className="font-mono font-bold text-slate-200">
+                {dbInfo?.fileSizeFormatted || 'نشط'}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[11px]">عدد السجلات المحفوظة:</span>
+              <span className="font-mono font-bold text-slate-200">
+                {detainees.length} سجل موقوف
+              </span>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-800/80 leading-relaxed">
+            يتم تخزين السجلات في ملف حقيقي <code className="text-emerald-400 font-mono">detainees.db</code> وتخزين الصور المحسّنة في مجلد التخزين المخصص <code className="text-emerald-400 font-mono">uploads/photos</code> دون التأثير على سرعة الاستعلامات.
           </p>
         </div>
 
@@ -125,20 +179,40 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
         )}
 
         {/* Action Options */}
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           
+          {/* Download SQLite Database file detainees.db */}
+          <button
+            onClick={handleDownloadSQLite}
+            className="w-full flex items-center justify-between p-3.5 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/40 hover:bg-emerald-100/50 hover:border-emerald-600 transition group cursor-pointer text-right"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center group-hover:scale-105 transition shadow-sm">
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span>تحميل ملف قاعدة البيانات الحقيقي (detainees.db)</span>
+                  <span className="bg-emerald-200 text-emerald-900 text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">SQLite .db</span>
+                </h4>
+                <p className="text-[11px] text-slate-600">تنزيل نسخة مطابقة من ملف SQLite لنسخه أو نقله أو فتحه ببرامج SQLite</p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-emerald-700">تحميل</span>
+          </button>
+
           {/* Download JSON Backup */}
           <button
-            onClick={handleExport}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition group cursor-pointer text-right"
+            onClick={handleExportJSON}
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition group cursor-pointer text-right"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition">
                 <Download className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-800">تنزيل نسخة احتياطية كاملة (JSON)</h4>
-                <p className="text-[11px] text-slate-500">حفظ كافة السجلات والصور في ملف على القرص الصلب</p>
+                <h4 className="text-xs font-bold text-slate-800">تنزيل نسخة احتياطية (JSON)</h4>
+                <p className="text-[11px] text-slate-500">حفظ كافة السجلات في ملف نصي مهيكل</p>
               </div>
             </div>
             <span className="text-xs font-medium text-blue-600">تصدير</span>
@@ -147,15 +221,15 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
           {/* Import JSON Backup */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition group cursor-pointer text-right"
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition group cursor-pointer text-right"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition">
                 <Upload className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-800">استرجاع نسخة احتياطية سابقة</h4>
-                <p className="text-[11px] text-slate-500">استيراد ملف JSON محفوظ مسبقاً</p>
+                <h4 className="text-xs font-bold text-slate-800">استرجاع أو استيراد نسخة احتياطية</h4>
+                <p className="text-[11px] text-slate-500">استيراد ملف JSON محفوظ مسبقاً وتخزينه في SQLite</p>
               </div>
             </div>
             <span className="text-xs font-medium text-emerald-600">استيراد</span>
@@ -168,27 +242,28 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             onChange={handleImportFile}
           />
 
-          {/* Reset to Sample Data */}
+          {/* Reset / Clear All Data */}
           <button
-            onClick={handleResetToSample}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 transition group cursor-pointer text-right"
+            onClick={handleResetDatabase}
+            disabled={isResetting}
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-red-200 hover:border-red-400 hover:bg-red-50/50 transition group cursor-pointer text-right"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition">
-                <RotateCcw className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-lg bg-red-100 text-red-700 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition">
+                <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-800">إعادة ضبط السجلات للبيانات التجريبية</h4>
-                <p className="text-[11px] text-slate-500">استعادة النماذج الأولية المرفقة مع النظام</p>
+                <h4 className="text-xs font-bold text-red-800">تصفير قاعدة البيانات والبدء من جديد</h4>
+                <p className="text-[11px] text-red-600/80">حذف كافة البيانات التجريبية والقديمة وتهيئة قاعدة بيانات فارغة</p>
               </div>
             </div>
-            <span className="text-xs font-medium text-amber-600">استعادة</span>
+            <span className="text-xs font-medium text-red-600">تصفير</span>
           </button>
 
         </div>
 
         {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+        <div className="mt-5 pt-4 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition cursor-pointer"
@@ -201,3 +276,4 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
     </div>
   );
 };
+

@@ -58,26 +58,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-slate-500">إجمالي السجلات: {detainees.length} موقوف</span>
             </div>
 
+            {/* SQLite DB Status Indicator */}
+            <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-600/40 text-emerald-300 text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-mono font-medium">detainees.db (SQLite)</span>
+            </div>
+
             {/* Export all to Excel */}
             <button
               id="export-all-excel-btn"
               onClick={() => exportDetaineesToExcel(detainees, 'كافة_سجلات_الموقوفين')}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition shadow-sm cursor-pointer"
               title="تصدير جميع السجلات إلى جدول إكسل"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               <span className="hidden sm:inline">تصدير إكسل</span>
             </button>
 
-            {/* Backup & Restore */}
+            {/* Backup & SQLite DB Modal */}
             <button
               id="backup-restore-btn"
               onClick={onOpenBackupModal}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition shadow-sm cursor-pointer"
-              title="النسخ الاحتياطي واستعادة البيانات"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition shadow-sm cursor-pointer"
+              title="إدارة قاعدة بيانات SQLite والنسخ الاحتياطي"
             >
               <Database className="w-4 h-4 text-blue-400" />
-              <span className="hidden md:inline">النسخ الاحتياطي</span>
+              <span className="hidden md:inline">قاعدة البيانات (detainees.db)</span>
             </button>
 
             {/* Add Detainee Button */}

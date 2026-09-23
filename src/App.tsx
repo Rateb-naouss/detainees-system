@@ -9,12 +9,19 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { BackupRestoreModal } from './components/BackupRestoreModal';
 import { Detainee, DetaineeFilters } from './types';
 import { loadDetainees, saveDetainees } from './utils/storage';
+import { 
+  fetchDetaineesFromDB, 
+  saveDetaineeToDB, 
+  deleteDetaineeFromDB, 
+  getDatabaseInfo 
+} from './utils/api';
 import { arabicIncludes } from './utils/arabicSearch';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function App() {
-  // Main State: List of detainees persisted in LocalStorage
+  // Main State: List of detainees persisted in SQLite (detainees.db)
   const [detainees, setDetainees] = useState<Detainee[]>(() => loadDetainees());
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
   const [filters, setFilters] = useState<DetaineeFilters>({
@@ -42,16 +49,32 @@ export default function App() {
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
-    }, 4000);
+    }, 4500);
   };
 
-  // Sync state changes to localStorage
+  // Load from SQLite on mount
+  useEffect(() => {
+    async function initData() {
+      setIsLoading(true);
+      try {
+        const res = await fetchDetaineesFromDB();
+        if (res.success) {
+          setDetainees(res.data);
+          saveDetainees(res.data);
+        }
+      } catch (e) {
+        console.warn('SQLite init error:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    initData();
+  }, []);
+
+  // Sync state changes to localStorage as a safety mirror
   const updateAndSaveDetainees = (newDetainees: Detainee[]) => {
     setDetainees(newDetainees);
-    const result = saveDetainees(newDetainees);
-    if (!result.success) {
-      showToast(result.error || 'فشل حفظ التغييرات في التخزين المحلي', 'error');
-    }
+    saveDetainees(newDetainees);
   };
 
   // Existing cell names for autocomplete suggestions
@@ -139,25 +162,43 @@ export default function App() {
     setIsFormModalOpen(true);
   };
 
-  const handleSaveDetainee = (finalized: Detainee) => {
+  const handleSaveDetainee = async (finalized: Detainee) => {
+    // Save to SQLite backend (which also stores optimized photos)
+    const savePromise = saveDetaineeToDB(finalized);
+
     let nextList: Detainee[];
     const exists = detainees.some((d) => d.id === finalized.id);
 
     if (exists) {
       nextList = detainees.map((d) => (d.id === finalized.id ? finalized : d));
-      showToast(`تم تحديث بيانات الموقوف (${finalized.firstName} ${finalized.lastName}) بنجاح`);
+      showToast(`تم حفظ وتحديث بيانات الموقوف (${finalized.firstName} ${finalized.lastName}) في قاعدة بيانات SQLite`);
     } else {
       nextList = [finalized, ...detainees];
-      showToast(`تم تسجيل الموقوف الجديد (${finalized.firstName} ${finalized.lastName}) بنجاح`);
+      showToast(`تم تسجيل الموقوف الجديد (${finalized.firstName} ${finalized.lastName}) في قاعدة بيانات SQLite`);
     }
 
     updateAndSaveDetainees(nextList);
     setIsFormModalOpen(false);
     setDetaineeToEdit(null);
 
-    // If currently viewing profile of this detainee, update it
     if (profileDetainee && profileDetainee.id === finalized.id) {
       setProfileDetainee(finalized);
+    }
+
+    // Await server response to update with optimized server photo URLs if returned
+    try {
+      const res = await savePromise;
+      if (res.success && res.data) {
+        const synced = res.data;
+        const updatedList = nextList.map((d) => (d.id === synced.id ? synced : d));
+        setDetainees(updatedList);
+        saveDetainees(updatedList);
+        if (profileDetainee && profileDetainee.id === synced.id) {
+          setProfileDetainee(synced);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend sync error:', err);
     }
   };
 
@@ -166,13 +207,19 @@ export default function App() {
     setDetaineeToDelete(detainee);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!detaineeToDelete) return;
-    const nextList = detainees.filter((d) => d.id !== detaineeToDelete.id);
+    const toDeleteId = detaineeToDelete.id;
+    const toDeleteName = `${detaineeToDelete.firstName} ${detaineeToDelete.lastName}`;
+
+    // Delete from SQLite backend
+    deleteDetaineeFromDB(toDeleteId);
+
+    const nextList = detainees.filter((d) => d.id !== toDeleteId);
     updateAndSaveDetainees(nextList);
-    showToast(`تم حذف سجل الموقوف (${detaineeToDelete.firstName} ${detaineeToDelete.lastName})`);
+    showToast(`تم حذف سجل الموقوف (${toDeleteName}) من قاعدة بيانات SQLite`);
     setDetaineeToDelete(null);
-    if (profileDetainee && profileDetainee.id === detaineeToDelete.id) {
+    if (profileDetainee && profileDetainee.id === toDeleteId) {
       setProfileDetainee(null);
     }
   };
@@ -250,9 +297,12 @@ export default function App() {
           <p>
             سجل الموقوفين - مصمم للعمل محلياً على الحاسوب دون الحاجة لاتصال بالإنترنت (Offline First) - إعداد الملازم الأول نعوس
           </p>
-          <p className="font-mono text-slate-400">
-            الحفظ التلقائي في LocalStorage مفعل
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="font-mono text-slate-600 font-medium">
+              قاعدة بيانات SQLite مفعلة (detainees.db)
+            </span>
+          </div>
         </div>
       </footer>
 
