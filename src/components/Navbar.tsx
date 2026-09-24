@@ -46,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                 سجلات   الموقوفين في النظارات
+                 سجلات الموقوفين في النظارات
               </p>
             </div>
           </div>

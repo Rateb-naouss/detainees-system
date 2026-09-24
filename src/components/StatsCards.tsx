@@ -84,7 +84,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
             النظارات المشغولة
           </p>
           <h3 className="text-2xl font-bold text-slate-800">{uniqueCells.length}</h3>
-          <p className="text-xs text-slate-400 mt-1">نظارة وزنزانة توقيف</p>
         </div>
         <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
           <Building2 className="w-6 h-6" />
@@ -98,7 +97,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
             توقيفات آخر 7 أيام
           </p>
           <h3 className="text-2xl font-bold text-slate-800">{recentDetainees}</h3>
-          <p className="text-xs text-slate-400 mt-1">حالات توقيف حديثة</p>
         </div>
         <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
           <CalendarDays className="w-6 h-6" />

@@ -295,14 +295,9 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>
-            سجل الموقوفين - مصمم للعمل محلياً على الحاسوب دون الحاجة لاتصال بالإنترنت (Offline First) - إعداد الملازم الأول نعوس
+            سجل الموقوفين - مصمم للعمل على الحاسوب دون الحاجة لاتصال بالإنترنت - تصميم الملازم الأول راتب نعوس
           </p>
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="font-mono text-slate-600 font-medium">
-              قاعدة بيانات SQLite مفعلة (detainees.db)
-            </span>
-          </div>
+          
         </div>
       </footer>
 

@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { 
-  Printer, 
   X, 
   Edit3, 
   Shield, 
@@ -11,7 +10,7 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { Detainee } from '../types';
-import { downloadElementAsPDF, printElementIsolated } from '../utils/printPdf';
+import { downloadElementAsPDF } from '../utils/printPdf';
 import isfLogo from '../assets/images/isf_logo_1790025317319.jpg';
 
 interface DetaineeProfileModalProps {
@@ -48,22 +47,13 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
       showNotice('تم تصدير وتنزيل ملف PDF بنجاح على جهازك!');
     } catch (err: unknown) {
       console.error('PDF export error:', err);
-      showNotice('حدث خطأ أثناء تنزيل PDF، يمكنك استخدام زر الطباعة المباشرة', true);
+      showNotice('حدث خطأ أثناء تنزيل PDF، يرجى المحاولة مرة أخرى', true);
     } finally {
       setIsExportingPdf(false);
     }
   };
 
-  // Isolated Print handler
-  const handlePrint = () => {
-    if (!printableContainerRef.current) {
-      window.print();
-      return;
-    }
-    printElementIsolated(printableContainerRef.current);
-  };
-
-  const photoLabels = ['الصورة الأمامية', 'الصورة الجانبية (يمين)', 'الصورة الجانبية (يسار)'];
+  const photoLabels = ['الصورة الأمامية', 'صورة 2', 'صورة 3'];
   const todayArabic = new Intl.DateTimeFormat('ar-EG', {
     year: 'numeric',
     month: 'long',
@@ -71,13 +61,13 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
   }).format(new Date());
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto bg-slate-950/75 backdrop-blur-xs">
+    <div className="fixed inset-0 z-45 flex items-center justify-center p-2 sm:p-4 overflow-y-auto bg-slate-950/75 backdrop-blur-xs">
       
       {/* Modal Card */}
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Top Control Bar (Hidden in Print) */}
-        <div className="no-print px-6 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
+        <div className="no-print px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-slate-800 p-1 flex items-center justify-center">
               <img 
@@ -120,17 +110,6 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                   <span>تحميل ملف PDF</span>
                 </>
               )}
-            </button>
-
-            {/* Direct Print Button */}
-            <button
-              id="print-pdf-btn"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer"
-              title="فتح نافذة الطباعة لاختيار طابعة أو Save as PDF"
-            >
-              <Printer className="w-4 h-4" />
-              <span>طباعة فورية</span>
             </button>
 
             {/* Edit Button */}
@@ -181,7 +160,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
         )}
 
         {/* Printable Profile Dossier */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100 print:bg-white print:p-0">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-7 bg-slate-100 print:bg-white print:p-0">
           
           <div 
             ref={printableContainerRef}
@@ -190,21 +169,19 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
           >
             
             {/* Official Header with ISF Emblem Logo and "قوى الأمن الداخلي مركز القيادة والتحكم" */}
-            <div className="border-b-2 border-slate-900 pb-5 mb-6">
+            <div className="border-b-2 border-slate-900 pb-5 mb-5">
               
               <div className="flex items-center justify-between mb-2">
                 {/* Right side info */}
-                <div className="text-right text-xs">
-                  <p className="font-bold text-slate-800">الجمهورية اللبنانية</p>
-                  <p className="text-slate-600">وزارة الداخلية والبلديات</p>
-                  <p className="text-slate-600">المديرية العامة لقوى الأمن الداخلي</p>
-                  <p className="font-bold text-blue-900 mt-0.5">قيادة منطقة الشمال الإقليمية</p>
-                  <p className="font-bold text-blue-900 mt-0.5">مركز القيادة والتحكم</p>
+                <div className="text-right py-1 text-xs">
+                  <p className="font-bold text-slate-600">المديرية العامة لقوى الأمن الداخلي</p>
+                  <p className="font-bold text-blue-900 mt-2.5">قيادة منطقة الشمال الإقليمية</p>
+                  <p className="font-bold text-blue-900 mt-2.5">مركز القيادة والتحكم</p>
                 </div>
 
                 {/* Center ISF Logo & Title */}
                 <div className="flex flex-col items-center justify-center text-center px-2">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 mb-1.5 flex items-center justify-center">
+                  <div className="w-15 h-15 sm:w-22 sm:h-22 mb-1.5 flex items-center justify-center">
                     <img 
                       src={isfLogo} 
                       alt="شعار قوى الأمن الداخلي" 
@@ -214,25 +191,18 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                       }}
                     />
                   </div>
-                  <h1 className="text-lg sm:text-xl font-black text-slate-950 tracking-wide">
-                    ISF
-                  </h1>
                   <span className="mt-1 inline-block bg-slate-900 text-white text-[11px] font-bold px-3 py-0.5 rounded-md">
                      بطاقة معلومات موقوف
                   </span>
                 </div>
 
                 {/* Left side meta */}
-                <div className="text-left text-xs font-mono text-slate-600" dir="ltr">
-                  <div>Date: {new Date().toISOString().slice(0, 10)}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">ID: {detainee.id}</div>
-                </div>
+                
               </div>
-
             </div>
 
             {/* Detention Status & Legal Case Banner */}
-            <div className="bg-slate-100 rounded-lg p-3.5 mb-6 border border-slate-300 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="bg-slate-100 rounded-lg p-3.5 mb-5 border border-slate-300 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-slate-600 font-medium">حالة الموقوف:</span>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -272,18 +242,14 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
             </div>
 
             {/* 3 Mugshot / Profile Photos Section */}
-            <div className="mb-6">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5 border-r-4 border-blue-700 pr-2">
-                <span>صور الموقوف</span>
-              </h3>
-              
+            <div className="mb-5">
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 {[0, 1, 2].map((idx) => {
                   const photo = detainee.photos?.[idx];
                   return (
                     <div 
                       key={idx} 
-                      className="border border-slate-300 rounded-lg p-2 bg-slate-50 flex flex-col items-center text-center"
+                      className="border border-slate-300 rounded-lg p-1 bg-slate-50 flex flex-col items-center text-center"
                     >
                       <div className="w-full aspect-3/4 rounded bg-slate-200 overflow-hidden flex items-center justify-center border border-slate-300 shadow-2xs">
                         {photo ? (
@@ -310,11 +276,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
             </div>
 
             {/* Comprehensive 15-Field Record Table */}
-            <div className="mb-6">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5 border-r-4 border-slate-800 pr-2">
-                <span>البيانات الشخصية للموقوف</span>
-              </h3>
-
+            <div className="mb-5">
               <div className="border border-slate-300 rounded-lg overflow-hidden text-xs">
                 <table className="w-full text-right border-collapse">
                   <tbody>
@@ -332,7 +294,7 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                         </span>
                       </td>
                       <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
-                        موقوف لصالح (القطعة)
+                        موقوف لصالح
                       </td>
                       <td className="p-2.5 text-slate-950 font-bold w-1/4">
                         {detainee.detainedForUnit || 'غير محددة'}
@@ -452,21 +414,13 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
               </div>
             </div>
 
-            {/* Official Signatures & Verification Area */}
-            <div className="mt-8 pt-6 border-t-2 border-slate-300 print-page-break">
-              <div className="text-center text-[10px] text-slate-400 mt-4 font-mono">
-                قوى الأمن الداخلي - مركز القيادة والتحكم | تم استخراج هذا التقرير بتاريخ {todayArabic}
-              </div>
-            </div>
-
           </div>
 
         </div>
 
         {/* Bottom Bar */}
         <div className="no-print px-6 py-3 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-          <span className="text-xs text-slate-500">
-            إعداد الملازم الأول نعوس </span>
+          <span className="text-xs text-slate-500">    </span>
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-lg transition cursor-pointer"

@@ -44,6 +44,7 @@ export async function initDB(): Promise<Database> {
 
   // Create Schema
   createTables(dbInstance);
+  migrateExistingPhotoFilenames(dbInstance);
   persistDB();
 
   return dbInstance;
@@ -134,15 +135,102 @@ export interface DetaineeRecord {
 }
 
 /**
- * Saves or updates a photo on disk and in database
+ * Sanitizes detainee name into safe filename segment (Arabic & alphanumeric)
  */
-export function savePhotoToDisk(detaineeId: string, index: number, photoInput: string): string {
+export function sanitizeDetaineeNameForFilename(
+  firstName: string,
+  fatherName?: string,
+  lastName?: string
+): string {
+  const parts = [firstName, fatherName, lastName]
+    .map((p) => (p || '').trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return 'موقوف';
+
+  let combined = parts.join('_');
+
+  // Strip characters forbidden or problematic across OS and filesystems
+  combined = combined
+    .replace(/[/\\?%*:|"<>#$&+`~=!'@^{}[\];,.]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return combined || 'موقوف';
+}
+
+/**
+ * Checks if a given photo filename in uploads is referenced by a different detainee
+ */
+export function isFileOwnedByAnotherDetainee(filename: string, currentDetaineeId: string): boolean {
+  if (!dbInstance) return false;
+  try {
+    const relativeUrl = `/uploads/photos/${path.basename(filename)}`;
+    const stmt = dbInstance.prepare(`
+      SELECT id FROM detainees 
+      WHERE (photo_0 = ? OR photo_1 = ? OR photo_2 = ?) AND id != ?
+      LIMIT 1
+    `);
+    stmt.bind([relativeUrl, relativeUrl, relativeUrl, currentDetaineeId]);
+    const hasAnotherOwner = stmt.step();
+    stmt.free();
+    return hasAnotherOwner;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Saves or updates a photo on disk and in database named after the detainee's name
+ */
+export function savePhotoToDisk(
+  detainee: { id: string; firstName: string; fatherName?: string; lastName: string },
+  index: number,
+  photoInput: string
+): string {
   if (!photoInput || typeof photoInput !== 'string' || photoInput.trim() === '') {
     return '';
   }
 
-  // If it's already an existing relative / uploaded URL, keep it
+  const safeName = sanitizeDetaineeNameForFilename(detainee.firstName, detainee.fatherName, detainee.lastName);
+
+  // If it's already an existing uploaded file in /uploads/photos/
   if (photoInput.startsWith('/uploads/photos/')) {
+    const oldFilename = path.basename(photoInput);
+    const oldFilePath = path.join(UPLOADS_DIR, oldFilename);
+    const extMatch = oldFilename.match(/\.([a-zA-Z0-9]+)$/);
+    const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+
+    // Target clean filename based on detainee name
+    let targetFilename = `${safeName}_${index + 1}.${ext}`;
+    if (isFileOwnedByAnotherDetainee(targetFilename, detainee.id)) {
+      targetFilename = `${safeName}_${detainee.id.slice(-4)}_${index + 1}.${ext}`;
+    }
+
+    // If the file exists under old name, rename it to the detainee's name
+    if (oldFilename !== targetFilename && fs.existsSync(oldFilePath)) {
+      const targetFilePath = path.join(UPLOADS_DIR, targetFilename);
+      try {
+        if (fs.existsSync(targetFilePath) && oldFilePath !== targetFilePath) {
+          fs.unlinkSync(targetFilePath);
+        }
+        fs.renameSync(oldFilePath, targetFilePath);
+        const newUrl = `/uploads/photos/${targetFilename}`;
+
+        if (dbInstance) {
+          dbInstance.run(
+            `UPDATE detainee_photos SET file_path = ? WHERE detainee_id = ? AND photo_index = ?`,
+            [newUrl, detainee.id, index]
+          );
+        }
+        return newUrl;
+      } catch (e) {
+        console.error(`[Uploads] Error renaming photo file from ${oldFilename} to ${targetFilename}:`, e);
+        return photoInput;
+      }
+    }
+
     return photoInput;
   }
 
@@ -153,7 +241,12 @@ export function savePhotoToDisk(detaineeId: string, index: number, photoInput: s
       const mimeType = matches[1];
       const base64Data = matches[2];
       const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg';
-      const filename = `${detaineeId}_photo_${index}_${Date.now()}.${ext}`;
+
+      let filename = `${safeName}_${index + 1}.${ext}`;
+      if (isFileOwnedByAnotherDetainee(filename, detainee.id)) {
+        filename = `${safeName}_${detainee.id.slice(-4)}_${index + 1}.${ext}`;
+      }
+
       const filePath = path.join(UPLOADS_DIR, filename);
 
       try {
@@ -165,19 +258,102 @@ export function savePhotoToDisk(detaineeId: string, index: number, photoInput: s
           dbInstance.run(
             `INSERT OR REPLACE INTO detainee_photos (detainee_id, photo_index, mime_type, file_path, photo_data, created_at)
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [detaineeId, index, mimeType, publicUrl, photoInput, new Date().toISOString()]
+            [detainee.id, index, mimeType, publicUrl, photoInput, new Date().toISOString()]
           );
         }
 
         return publicUrl;
       } catch (err) {
-        console.error(`[Uploads] Error saving photo for ${detaineeId} [${index}]:`, err);
+        console.error(`[Uploads] Error saving photo for ${detainee.id} (${safeName}) [${index}]:`, err);
         return photoInput; // fallback to inline if write failed
       }
     }
   }
 
   return photoInput;
+}
+
+/**
+ * Migrates existing photos in uploads/photos that have legacy filenames (e.g. det-...)
+ * to be named after the detainee's name
+ */
+export function migrateExistingPhotoFilenames(db: Database): void {
+  try {
+    const stmt = db.prepare(`SELECT id, first_name, father_name, last_name, photo_0, photo_1, photo_2 FROM detainees`);
+    const updates: Array<{ id: string; photos: [string, string, string] }> = [];
+
+    while (stmt.step()) {
+      const row = stmt.getAsObject() as Record<string, unknown>;
+      const id = String(row.id || '');
+      const firstName = String(row.first_name || '');
+      const fatherName = String(row.father_name || '');
+      const lastName = String(row.last_name || '');
+      const safeName = sanitizeDetaineeNameForFilename(firstName, fatherName, lastName);
+
+      const photos: [string, string, string] = [
+        String(row.photo_0 || ''),
+        String(row.photo_1 || ''),
+        String(row.photo_2 || '')
+      ];
+      let hasChange = false;
+
+      for (let i = 0; i < 3; i++) {
+        const photoUrl = photos[i];
+        if (photoUrl && photoUrl.startsWith('/uploads/photos/')) {
+          const oldFilename = path.basename(photoUrl);
+          const extMatch = oldFilename.match(/\.([a-zA-Z0-9]+)$/);
+          const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+          const targetFilename = `${safeName}_${i + 1}.${ext}`;
+
+          if (oldFilename !== targetFilename) {
+            const oldPath = path.join(UPLOADS_DIR, oldFilename);
+            const targetPath = path.join(UPLOADS_DIR, targetFilename);
+
+            if (fs.existsSync(oldPath)) {
+              try {
+                if (fs.existsSync(targetPath) && oldPath !== targetPath) {
+                  fs.unlinkSync(targetPath);
+                }
+                fs.renameSync(oldPath, targetPath);
+                photos[i] = `/uploads/photos/${targetFilename}`;
+                hasChange = true;
+                console.log(`[Migration] Renamed photo from ${oldFilename} to ${targetFilename}`);
+              } catch (e) {
+                console.error(`[Migration] Failed to rename photo ${oldFilename}:`, e);
+              }
+            }
+          }
+        }
+      }
+
+      if (hasChange) {
+        updates.push({ id, photos });
+      }
+    }
+    stmt.free();
+
+    for (const update of updates) {
+      db.run(
+        `UPDATE detainees SET photo_0 = ?, photo_1 = ?, photo_2 = ? WHERE id = ?`,
+        [update.photos[0], update.photos[1], update.photos[2], update.id]
+      );
+      for (let i = 0; i < 3; i++) {
+        if (update.photos[i]) {
+          db.run(
+            `UPDATE detainee_photos SET file_path = ? WHERE detainee_id = ? AND photo_index = ?`,
+            [update.photos[i], update.id, i]
+          );
+        }
+      }
+    }
+
+    if (updates.length > 0) {
+      persistDB();
+      console.log(`[Migration] Updated ${updates.length} detainees with new photo filenames.`);
+    }
+  } catch (err) {
+    console.error('[Migration] Error migrating photo filenames:', err);
+  }
 }
 
 /**
@@ -229,12 +405,44 @@ export async function getAllDetainees(): Promise<DetaineeRecord[]> {
 export async function saveDetaineeRecord(detainee: DetaineeRecord): Promise<DetaineeRecord> {
   const db = await initDB();
 
-  // Process and optimize photos (saving base64 to uploads folder)
+  // If editing an existing record, check if photos were removed so we can clean up old files
+  const existingStmt = db.prepare(`SELECT photo_0, photo_1, photo_2 FROM detainees WHERE id = ?`);
+  existingStmt.bind([detainee.id]);
+  let oldPhotos: [string, string, string] = ['', '', ''];
+  if (existingStmt.step()) {
+    const row = existingStmt.getAsObject() as Record<string, unknown>;
+    oldPhotos = [
+      String(row.photo_0 || ''),
+      String(row.photo_1 || ''),
+      String(row.photo_2 || '')
+    ];
+  }
+  existingStmt.free();
+
+  // Process and optimize photos (saving base64 or renaming to detainee name)
   const processedPhotos: [string, string, string] = [
-    savePhotoToDisk(detainee.id, 0, detainee.photos?.[0] || ''),
-    savePhotoToDisk(detainee.id, 1, detainee.photos?.[1] || ''),
-    savePhotoToDisk(detainee.id, 2, detainee.photos?.[2] || '')
+    savePhotoToDisk(detainee, 0, detainee.photos?.[0] || ''),
+    savePhotoToDisk(detainee, 1, detainee.photos?.[1] || ''),
+    savePhotoToDisk(detainee, 2, detainee.photos?.[2] || '')
   ];
+
+  // Clean up any removed photo files
+  for (let i = 0; i < 3; i++) {
+    const oldP = oldPhotos[i];
+    const newP = processedPhotos[i];
+    if (oldP && oldP.startsWith('/uploads/photos/') && oldP !== newP && !processedPhotos.includes(oldP)) {
+      if (!isFileOwnedByAnotherDetainee(path.basename(oldP), detainee.id)) {
+        const localPath = path.join(UPLOADS_DIR, path.basename(oldP));
+        if (fs.existsSync(localPath)) {
+          try {
+            fs.unlinkSync(localPath);
+          } catch (e) {
+            console.error('Error removing old photo file:', e);
+          }
+        }
+      }
+    }
+  }
 
   const now = new Date().toISOString();
   const createdAt = detainee.createdAt || now;

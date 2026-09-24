@@ -224,9 +224,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
   };
 
   const photoLabels = [
-    { title: 'الصورة الأمامية (وجه كامل)', sub: 'صورة رسمية من الأمام' },
-    { title: 'الصورة الجانبية اليمنى', sub: 'زاوية 90 درجة يمين' },
-    { title: 'الصورة الجانبية اليسرى', sub: 'زاوية 90 درجة يسار' },
+    { title: 'الصورة الأمامية', sub: '' },
+    { title: 'صورة 2', sub: '' },
+    { title: 'صورة 3', sub: '' },
   ];
 
   return (
@@ -599,6 +599,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                   placeholder="+961 70 123456"
                   className="w-full py-2 px-3 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                 />
+              
               </div>
 
               {/* Previous Address */}
@@ -617,16 +618,13 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
             </div>
           </div>
 
-          {/* Section 4: صور الموقوف (3 صور إلزامية/اختيارية مع ضغط تلقائي) */}
+          {/* Section 4: صور الموقوف  */}
           <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-blue-600" />
-                <span>14. صور الموقوف (3 صور: أمامية، جانبية يمنى، جانبية يسرى)</span>
+                <span>14. صور الموقوف </span>
               </h3>
-              <span className="text-[11px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                يتم ضغط الصور تلقائياً وحفظها بأمان داخل LocalStorage
-              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -732,7 +730,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               rows={3}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="اكتب هنا أي تفاصيل قانونية، مضبوطات، حالة صحية، توجيهات أمنية، أو ملاحظات خاصة بالموقوف..."
+              placeholder="اكتب هنا أي تفاصيل، مضبوطات، حالة صحية، توجيهات..."
               className="w-full p-3 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

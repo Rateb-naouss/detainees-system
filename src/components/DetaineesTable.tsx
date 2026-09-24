@@ -268,7 +268,7 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                         <button
                           onClick={() => onViewProfile(d)}
                           className="p-1.5 rounded-lg text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 transition cursor-pointer"
-                          title="عرض البطاقة الأمنية الكاملة وتصدير PDF / طباعة"
+                          title="عرض بطاقة الموقوف وتصدير PDF"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
