@@ -8,15 +8,13 @@ import {
   HardDrive, 
   CheckCircle2, 
   AlertCircle,
-  FileCode,
-  Trash2
+  FileCode
 } from 'lucide-react';
 import { Detainee } from '../types';
 import { downloadBackupJSON, importBackupJSON } from '../utils/storage';
 import { 
   downloadSQLiteDB, 
   getDatabaseInfo, 
-  resetSQLiteDB, 
   importJSONToSQLite, 
   DatabaseInfo 
 } from '../utils/api';
@@ -37,7 +35,6 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; isError?: boolean } | null>(null);
   const [dbInfo, setDbInfo] = useState<DatabaseInfo | null>(null);
-  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -82,26 +79,6 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
       });
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleResetDatabase = async () => {
-    if (window.confirm('تحذير: هل أنت متأكد من رغبتك في تصفير قاعدة البيانات بالكامل؟ سيتم حذف جميع الموقوفين والصور المخزنة والبدء بقاعدة بيانات جديدة وفارغة.')) {
-      setIsResetting(true);
-      try {
-        const res = await resetSQLiteDB();
-        if (res.success) {
-          onUpdateDetainees([]);
-          setStatusMessage({ text: 'تم تصفير قاعدة بيانات SQLite وحذف السجلات بنجاح. قاعدة البيانات جاهزة لاستقبال بياناتكم الجديدة.' });
-          getDatabaseInfo().then(setDbInfo);
-        } else {
-          setStatusMessage({ text: res.error || 'تعذر تصفير قاعدة البيانات', isError: true });
-        }
-      } catch (e: unknown) {
-        setStatusMessage({ text: 'حدث خطأ أثناء محاولة التصفير', isError: true });
-      } finally {
-        setIsResetting(false);
-      }
     }
   };
 
@@ -241,24 +218,6 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             className="hidden"
             onChange={handleImportFile}
           />
-
-          {/* Reset / Clear All Data */}
-          <button
-            onClick={handleResetDatabase}
-            disabled={isResetting}
-            className="w-full flex items-center justify-between p-3 rounded-xl border border-red-200 hover:border-red-400 hover:bg-red-50/50 transition group cursor-pointer text-right"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-red-100 text-red-700 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-red-800">تصفير قاعدة البيانات والبدء من جديد</h4>
-                <p className="text-[11px] text-red-600/80">حذف كافة البيانات التجريبية والقديمة وتهيئة قاعدة بيانات فارغة</p>
-              </div>
-            </div>
-            <span className="text-xs font-medium text-red-600">تصفير</span>
-          </button>
 
         </div>
 

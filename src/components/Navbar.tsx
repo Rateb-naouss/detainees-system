@@ -58,12 +58,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-slate-500">إجمالي السجلات: {detainees.length} موقوف</span>
             </div>
 
-            {/* SQLite DB Status Indicator */}
-            <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-600/40 text-emerald-300 text-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="font-mono font-medium">detainees.db (SQLite)</span>
-            </div>
 
             {/* Export all to Excel */}
             <button
