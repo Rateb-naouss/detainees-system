@@ -60,6 +60,7 @@ function createTables(db: Database) {
       detention_date TEXT,
       detention_cell TEXT,
       status TEXT DEFAULT 'موقوف',
+      release_date TEXT,
       detained_for_unit TEXT,
       crime_type TEXT,
       first_name TEXT NOT NULL,
@@ -91,6 +92,13 @@ function createTables(db: Database) {
       PRIMARY KEY (detainee_id, photo_index)
     );
   `);
+
+  // Ensure release_date column exists on existing databases
+  try {
+    db.run(`ALTER TABLE detainees ADD COLUMN release_date TEXT;`);
+  } catch {
+    // Column already exists
+  }
 }
 
 /**
@@ -115,6 +123,7 @@ export interface DetaineeRecord {
   detentionDate: string;
   detentionCell: string;
   status: 'موقوف' | 'أخلي سبيله';
+  releaseDate?: string;
   detainedForUnit: string;
   crimeType: string;
   firstName: string;
@@ -371,6 +380,7 @@ export async function getAllDetainees(): Promise<DetaineeRecord[]> {
       detentionDate: String(row.detention_date || ''),
       detentionCell: String(row.detention_cell || ''),
       status: (row.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف') as 'موقوف' | 'أخلي سبيله',
+      releaseDate: String(row.release_date || ''),
       detainedForUnit: String(row.detained_for_unit || ''),
       crimeType: String(row.crime_type || ''),
       firstName: String(row.first_name || ''),
@@ -447,19 +457,21 @@ export async function saveDetaineeRecord(detainee: DetaineeRecord): Promise<Deta
   const now = new Date().toISOString();
   const createdAt = detainee.createdAt || now;
   const updatedAt = now;
+  const releaseDateToSave = detainee.status === 'أخلي سبيله' ? (detainee.releaseDate || '') : '';
 
   db.run(
     `INSERT OR REPLACE INTO detainees (
-      id, detention_date, detention_cell, status, detained_for_unit, crime_type,
+      id, detention_date, detention_cell, status, release_date, detained_for_unit, crime_type,
       first_name, father_name, last_name, mother_name, place_of_birth, date_of_birth,
       gender, nationality, phone_number, previous_address, record_date, notes,
       photo_0, photo_1, photo_2, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       detainee.id,
       detainee.detentionDate || '',
       detainee.detentionCell || '',
       detainee.status || 'موقوف',
+      releaseDateToSave,
       detainee.detainedForUnit || '',
       detainee.crimeType || '',
       detainee.firstName,

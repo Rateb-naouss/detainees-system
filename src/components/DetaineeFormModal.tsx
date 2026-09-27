@@ -41,6 +41,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
     detentionDate: string;
     detentionCell: string;
     status: 'موقوف' | 'أخلي سبيله';
+    releaseDate: string;
     detainedForUnit: string;
     crimeType: string;
     firstName: string;
@@ -60,6 +61,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
     detentionDate: todayStr,
     detentionCell: '',
     status: 'موقوف',
+    releaseDate: todayStr,
     detainedForUnit: '',
     crimeType: '',
     firstName: '',
@@ -91,6 +93,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
         detentionDate: detaineeToEdit.detentionDate || todayStr,
         detentionCell: detaineeToEdit.detentionCell || '',
         status: detaineeToEdit.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف',
+        releaseDate: detaineeToEdit.releaseDate || todayStr,
         detainedForUnit: detaineeToEdit.detainedForUnit || '',
         crimeType: detaineeToEdit.crimeType || '',
         firstName: detaineeToEdit.firstName || '',
@@ -118,6 +121,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
         detentionDate: todayStr,
         detentionCell: '',
         status: 'موقوف',
+        releaseDate: todayStr,
         detainedForUnit: '',
         crimeType: '',
         firstName: '',
@@ -201,6 +205,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
       detentionDate: formData.detentionDate,
       detentionCell: formData.detentionCell.trim(),
       status: formData.status,
+      releaseDate: formData.status === 'أخلي سبيله' ? (formData.releaseDate || todayStr) : undefined,
       detainedForUnit: formData.detainedForUnit.trim(),
       crimeType: formData.crimeType.trim(),
       firstName: formData.firstName.trim(),
@@ -292,7 +297,11 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, status: 'أخلي سبيله' })}
+                    onClick={() => setFormData({ 
+                      ...formData, 
+                      status: 'أخلي سبيله',
+                      releaseDate: formData.releaseDate || todayStr 
+                    })}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
                       formData.status === 'أخلي سبيله'
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-xs ring-1 ring-emerald-300'
@@ -303,6 +312,24 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                     <span>أخلي سبيله</span>
                   </button>
                 </div>
+
+                {/* تاريخ إخلاء السبيل - يظهر فقط عند اختيار أخلي سبيله */}
+                {formData.status === 'أخلي سبيله' && (
+                  <div className="mt-2.5 p-2.5 bg-emerald-50/90 rounded-lg border border-emerald-300 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <label className="block text-xs font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>تاريخ إخلاء السبيل</span>
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.releaseDate || todayStr}
+                      onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
+                      className="w-full py-1.5 px-2.5 bg-white border border-emerald-300 rounded-md text-xs sm:text-sm font-medium text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* موقوف لصالح: (اختيار اسم القطعة) */}

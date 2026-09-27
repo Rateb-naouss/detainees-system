@@ -21,6 +21,7 @@ export function loadDetainees(): Detainee[] {
       return parsed.map((item) => ({
         ...item,
         status: item.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف',
+        releaseDate: item.releaseDate || '',
         detainedForUnit: item.detainedForUnit || '',
         crimeType: item.crimeType || '',
       }));

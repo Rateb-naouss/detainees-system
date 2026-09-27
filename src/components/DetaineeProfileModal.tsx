@@ -215,6 +215,15 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                 </span>
               </div>
 
+              {detainee.status === 'أخلي سبيله' && (
+                <div>
+                  <span className="text-slate-600 font-medium">تاريخ إخلاء السبيل: </span>
+                  <strong className="text-emerald-700 font-mono font-bold text-sm">
+                    {detainee.releaseDate || '---'}
+                  </strong>
+                </div>
+              )}
+
               <div>
                 <span className="text-slate-600 font-medium">موقوف لصالح: </span>
                 <strong className="text-slate-950 font-bold">{detainee.detainedForUnit || '---'}</strong>
@@ -292,6 +301,11 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                           <span className={`w-1.5 h-1.5 rounded-full ${detainee.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
                           {detainee.status || 'موقوف'}
                         </span>
+                        {detainee.status === 'أخلي سبيله' && (
+                          <div className="text-[11px] text-emerald-800 mt-1 font-medium">
+                            تاريخ الإخلاء: <span className="font-mono font-bold">{detainee.releaseDate || '---'}</span>
+                          </div>
+                        )}
                       </td>
                       <td className="bg-slate-100 font-bold text-slate-800 p-2.5 w-1/4 border-l border-slate-200">
                         موقوف لصالح

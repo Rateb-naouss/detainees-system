@@ -216,6 +216,11 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                         <span className={`w-1.5 h-1.5 rounded-full ${d.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
                         <span>{d.status || 'موقوف'}</span>
                       </span>
+                      {d.status === 'أخلي سبيله' && d.releaseDate && (
+                        <div className="text-[10px] text-emerald-700 font-mono mt-1 font-medium" title="تاريخ إخلاء السبيل">
+                          {d.releaseDate}
+                        </div>
+                      )}
                     </td>
 
                     {/* Detained for Unit: موقوف لصالح */}

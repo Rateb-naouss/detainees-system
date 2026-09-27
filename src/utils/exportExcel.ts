@@ -19,6 +19,7 @@ export function exportDetaineesToExcel(detainees: Detainee[], filenamePrefix = '
     return {
       'ت': index + 1,
       'حالة الموقوف': d.status || 'موقوف',
+      'تاريخ إخلاء السبيل': d.status === 'أخلي سبيله' ? (d.releaseDate || '') : '',
       'موقوف لصالح': d.detainedForUnit || '',
       'نوع الجرم': d.crimeType || '',
       'تاريخ التوقيف': d.detentionDate || '',

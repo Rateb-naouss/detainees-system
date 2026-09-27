@@ -96,6 +96,7 @@ export default function App() {
           arabicIncludes(d.lastName, q) ||
           arabicIncludes(fullName, q) ||
           arabicIncludes(d.status, q) ||
+          arabicIncludes(d.releaseDate, q) ||
           arabicIncludes(d.detainedForUnit, q) ||
           arabicIncludes(d.crimeType, q) ||
           arabicIncludes(d.motherName, q) ||
