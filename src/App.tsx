@@ -97,6 +97,8 @@ export default function App() {
           arabicIncludes(fullName, q) ||
           arabicIncludes(d.status, q) ||
           arabicIncludes(d.releaseDate, q) ||
+          arabicIncludes(d.transferPrison, q) ||
+          arabicIncludes(d.transferDate, q) ||
           arabicIncludes(d.detainedForUnit, q) ||
           arabicIncludes(d.crimeType, q) ||
           arabicIncludes(d.motherName, q) ||
@@ -312,6 +314,7 @@ export default function App() {
         onSave={handleSaveDetainee}
         detaineeToEdit={detaineeToEdit}
         existingCells={existingCells}
+        existingDetainees={detainees}
       />
 
       {/* Profile Dossier & PDF Print Export Modal */}

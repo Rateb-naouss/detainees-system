@@ -61,6 +61,8 @@ function createTables(db: Database) {
       detention_cell TEXT,
       status TEXT DEFAULT 'موقوف',
       release_date TEXT,
+      transfer_prison TEXT,
+      transfer_date TEXT,
       detained_for_unit TEXT,
       crime_type TEXT,
       first_name TEXT NOT NULL,
@@ -93,9 +95,19 @@ function createTables(db: Database) {
     );
   `);
 
-  // Ensure release_date column exists on existing databases
+  // Ensure release_date and transfer columns exist on existing databases
   try {
     db.run(`ALTER TABLE detainees ADD COLUMN release_date TEXT;`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.run(`ALTER TABLE detainees ADD COLUMN transfer_prison TEXT;`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.run(`ALTER TABLE detainees ADD COLUMN transfer_date TEXT;`);
   } catch {
     // Column already exists
   }
@@ -122,8 +134,10 @@ export interface DetaineeRecord {
   id: string;
   detentionDate: string;
   detentionCell: string;
-  status: 'موقوف' | 'أخلي سبيله';
+  status: 'موقوف' | 'أخلي سبيله' | 'نقل الى سجن';
   releaseDate?: string;
+  transferPrison?: string;
+  transferDate?: string;
   detainedForUnit: string;
   crimeType: string;
   firstName: string;
@@ -379,8 +393,10 @@ export async function getAllDetainees(): Promise<DetaineeRecord[]> {
       id: String(row.id || ''),
       detentionDate: String(row.detention_date || ''),
       detentionCell: String(row.detention_cell || ''),
-      status: (row.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف') as 'موقوف' | 'أخلي سبيله',
+      status: (row.status === 'أخلي سبيله' ? 'أخلي سبيله' : row.status === 'نقل الى سجن' ? 'نقل الى سجن' : 'موقوف') as 'موقوف' | 'أخلي سبيله' | 'نقل الى سجن',
       releaseDate: String(row.release_date || ''),
+      transferPrison: String(row.transfer_prison || ''),
+      transferDate: String(row.transfer_date || ''),
       detainedForUnit: String(row.detained_for_unit || ''),
       crimeType: String(row.crime_type || ''),
       firstName: String(row.first_name || ''),
@@ -458,20 +474,24 @@ export async function saveDetaineeRecord(detainee: DetaineeRecord): Promise<Deta
   const createdAt = detainee.createdAt || now;
   const updatedAt = now;
   const releaseDateToSave = detainee.status === 'أخلي سبيله' ? (detainee.releaseDate || '') : '';
+  const transferPrisonToSave = detainee.status === 'نقل الى سجن' ? (detainee.transferPrison || '') : '';
+  const transferDateToSave = detainee.status === 'نقل الى سجن' ? (detainee.transferDate || '') : '';
 
   db.run(
     `INSERT OR REPLACE INTO detainees (
-      id, detention_date, detention_cell, status, release_date, detained_for_unit, crime_type,
+      id, detention_date, detention_cell, status, release_date, transfer_prison, transfer_date, detained_for_unit, crime_type,
       first_name, father_name, last_name, mother_name, place_of_birth, date_of_birth,
       gender, nationality, phone_number, previous_address, record_date, notes,
       photo_0, photo_1, photo_2, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       detainee.id,
       detainee.detentionDate || '',
       detainee.detentionCell || '',
       detainee.status || 'موقوف',
       releaseDateToSave,
+      transferPrisonToSave,
+      transferDateToSave,
       detainee.detainedForUnit || '',
       detainee.crimeType || '',
       detainee.firstName,

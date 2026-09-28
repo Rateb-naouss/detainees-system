@@ -117,6 +117,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <option value="">جميع الحالات</option>
             <option value="موقوف">موقوف</option>
             <option value="أخلي سبيله">أخلي سبيله</option>
+            <option value="نقل الى سجن">نقل الى سجن</option>
           </select>
         </div>
 

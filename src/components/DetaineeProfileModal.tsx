@@ -208,9 +208,17 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                   detainee.status === 'أخلي سبيله'
                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : detainee.status === 'نقل الى سجن'
+                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
                     : 'bg-rose-100 text-rose-800 border border-rose-300'
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${detainee.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    detainee.status === 'أخلي سبيله' 
+                      ? 'bg-emerald-600' 
+                      : detainee.status === 'نقل الى سجن'
+                      ? 'bg-blue-600'
+                      : 'bg-rose-600'
+                  }`}></span>
                   <span>{detainee.status || 'موقوف'}</span>
                 </span>
               </div>
@@ -222,6 +230,23 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                     {detainee.releaseDate || '---'}
                   </strong>
                 </div>
+              )}
+
+              {detainee.status === 'نقل الى سجن' && (
+                <>
+                  <div>
+                    <span className="text-slate-600 font-medium">السجن المنقول إليه: </span>
+                    <strong className="text-blue-900 font-bold text-sm">
+                      {detainee.transferPrison || '---'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-600 font-medium">تاريخ النقل: </span>
+                    <strong className="text-blue-700 font-mono font-bold text-sm">
+                      {detainee.transferDate || '---'}
+                    </strong>
+                  </div>
+                </>
               )}
 
               <div>
@@ -296,14 +321,30 @@ export const DetaineeProfileModal: React.FC<DetaineeProfileModalProps> = ({
                       </td>
                       <td className="p-2.5 text-slate-800 w-1/4 border-l border-slate-200">
                         <span className={`inline-flex items-center gap-1 font-bold ${
-                          detainee.status === 'أخلي سبيله' ? 'text-emerald-700' : 'text-rose-700'
+                          detainee.status === 'أخلي سبيله' 
+                            ? 'text-emerald-700' 
+                            : detainee.status === 'نقل الى سجن'
+                            ? 'text-blue-700'
+                            : 'text-rose-700'
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${detainee.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            detainee.status === 'أخلي سبيله' 
+                              ? 'bg-emerald-600' 
+                              : detainee.status === 'نقل الى سجن'
+                              ? 'bg-blue-600'
+                              : 'bg-rose-600'
+                          }`}></span>
                           {detainee.status || 'موقوف'}
                         </span>
                         {detainee.status === 'أخلي سبيله' && (
                           <div className="text-[11px] text-emerald-800 mt-1 font-medium">
                             تاريخ الإخلاء: <span className="font-mono font-bold">{detainee.releaseDate || '---'}</span>
+                          </div>
+                        )}
+                        {detainee.status === 'نقل الى سجن' && (
+                          <div className="text-[11px] text-blue-900 mt-1 space-y-0.5">
+                            <div>السجن: <span className="font-bold">{detainee.transferPrison || '---'}</span></div>
+                            <div>تاريخ النقل: <span className="font-mono font-bold">{detainee.transferDate || '---'}</span></div>
                           </div>
                         )}
                       </td>

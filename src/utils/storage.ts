@@ -20,8 +20,10 @@ export function loadDetainees(): Detainee[] {
       // Ensure backwards compatibility with newly added fields
       return parsed.map((item) => ({
         ...item,
-        status: item.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف',
+        status: (item.status === 'أخلي سبيله' ? 'أخلي سبيله' : item.status === 'نقل الى سجن' ? 'نقل الى سجن' : 'موقوف') as 'موقوف' | 'أخلي سبيله' | 'نقل الى سجن',
         releaseDate: item.releaseDate || '',
+        transferPrison: item.transferPrison || '',
+        transferDate: item.transferDate || '',
         detainedForUnit: item.detainedForUnit || '',
         crimeType: item.crimeType || '',
       }));

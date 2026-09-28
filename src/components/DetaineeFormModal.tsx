@@ -14,10 +14,14 @@ import {
   FileText,
   Scale,
   Shield,
-  CheckCircle2
+  CheckCircle2,
+  ArrowRightLeft,
+  AlertTriangle,
+  UserCheck
 } from 'lucide-react';
 import { Detainee, DetaineePhotoIndex } from '../types';
 import { compressImage } from '../utils/imageCompressor';
+import { normalizeArabic } from '../utils/arabicSearch';
 
 interface DetaineeFormModalProps {
   isOpen: boolean;
@@ -25,6 +29,7 @@ interface DetaineeFormModalProps {
   onSave: (detainee: Detainee) => void;
   detaineeToEdit: Detainee | null;
   existingCells: string[];
+  existingDetainees?: Detainee[];
 }
 
 export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
@@ -33,6 +38,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
   onSave,
   detaineeToEdit,
   existingCells,
+  existingDetainees = [],
 }) => {
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -40,8 +46,10 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
   const [formData, setFormData] = useState<{
     detentionDate: string;
     detentionCell: string;
-    status: 'موقوف' | 'أخلي سبيله';
+    status: 'موقوف' | 'أخلي سبيله' | 'نقل الى سجن';
     releaseDate: string;
+    transferPrison: string;
+    transferDate: string;
     detainedForUnit: string;
     crimeType: string;
     firstName: string;
@@ -62,6 +70,8 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
     detentionCell: '',
     status: 'موقوف',
     releaseDate: todayStr,
+    transferPrison: '',
+    transferDate: todayStr,
     detainedForUnit: '',
     crimeType: '',
     firstName: '',
@@ -81,6 +91,67 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isProcessingImage, setIsProcessingImage] = useState<number | null>(null);
+  const [isDuplicateDismissed, setIsDuplicateDismissed] = useState(false);
+  const [importNotification, setImportNotification] = useState<string | null>(null);
+  const lastCheckedPairRef = useRef<string>('');
+
+  // Un-dismiss if the user changes the first or last name
+  const currentPair = `${formData.firstName.trim()}|${formData.lastName.trim()}`;
+  if (lastCheckedPairRef.current !== currentPair) {
+    lastCheckedPairRef.current = currentPair;
+    if (isDuplicateDismissed) {
+      setIsDuplicateDismissed(false);
+    }
+  }
+
+  // Find matches where both first name and last name match an existing detainee
+  const cleanName = (str: string | null | undefined) => normalizeArabic(str || '').replace(/\s+/g, '');
+  const matchingDetainees = React.useMemo(() => {
+    const trimmedFirst = formData.firstName.trim();
+    const trimmedLast = formData.lastName.trim();
+    if (!trimmedFirst || !trimmedLast || trimmedFirst.length < 2 || trimmedLast.length < 2) {
+      return [];
+    }
+    if (!existingDetainees || existingDetainees.length === 0) {
+      return [];
+    }
+
+    const cleanFirst = cleanName(trimmedFirst);
+    const cleanLast = cleanName(trimmedLast);
+
+    return existingDetainees.filter((d) => {
+      // Exclude the record currently being edited
+      if (detaineeToEdit && d.id === detaineeToEdit.id) {
+        return false;
+      }
+      return cleanName(d.firstName) === cleanFirst && cleanName(d.lastName) === cleanLast;
+    });
+  }, [formData.firstName, formData.lastName, existingDetainees, detaineeToEdit]);
+
+  const handleSelectExisting = (match: Detainee) => {
+    setFormData((prev) => ({
+      ...prev,
+      firstName: match.firstName || prev.firstName,
+      fatherName: match.fatherName || prev.fatherName,
+      lastName: match.lastName || prev.lastName,
+      motherName: match.motherName || prev.motherName,
+      placeOfBirth: match.placeOfBirth || prev.placeOfBirth,
+      dateOfBirth: match.dateOfBirth || prev.dateOfBirth,
+      gender: match.gender || prev.gender,
+      nationality: match.nationality || prev.nationality,
+      phoneNumber: match.phoneNumber || prev.phoneNumber,
+      previousAddress: match.previousAddress || prev.previousAddress,
+      // If current form has no photos, copy from matching record
+      photos: prev.photos.some((p) => p && p.trim().length > 0)
+        ? prev.photos
+        : [match.photos?.[0] || '', match.photos?.[1] || '', match.photos?.[2] || ''],
+    }));
+
+    setIsDuplicateDismissed(true);
+    setImportNotification(
+      `تم استيراد كافة البيانات الشخصية للموقوف (${match.firstName} ${match.fatherName || ''} ${match.lastName}) بنجاح! يمكنك الآن استكمال بيانات التوقيف والنظارة.`
+    );
+  };
 
   // File input refs for the 3 slots
   const fileInputRef0 = useRef<HTMLInputElement>(null);
@@ -88,12 +159,18 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
   const fileInputRef2 = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setIsDuplicateDismissed(false);
+    setImportNotification(null);
+    lastCheckedPairRef.current = '';
+
     if (detaineeToEdit) {
       setFormData({
         detentionDate: detaineeToEdit.detentionDate || todayStr,
         detentionCell: detaineeToEdit.detentionCell || '',
-        status: detaineeToEdit.status === 'أخلي سبيله' ? 'أخلي سبيله' : 'موقوف',
+        status: detaineeToEdit.status === 'أخلي سبيله' ? 'أخلي سبيله' : detaineeToEdit.status === 'نقل الى سجن' ? 'نقل الى سجن' : 'موقوف',
         releaseDate: detaineeToEdit.releaseDate || todayStr,
+        transferPrison: detaineeToEdit.transferPrison || '',
+        transferDate: detaineeToEdit.transferDate || todayStr,
         detainedForUnit: detaineeToEdit.detainedForUnit || '',
         crimeType: detaineeToEdit.crimeType || '',
         firstName: detaineeToEdit.firstName || '',
@@ -122,6 +199,8 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
         detentionCell: '',
         status: 'موقوف',
         releaseDate: todayStr,
+        transferPrison: '',
+        transferDate: todayStr,
         detainedForUnit: '',
         crimeType: '',
         firstName: '',
@@ -187,6 +266,9 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
     if (!formData.detentionDate) {
       newErrors.detentionDate = 'تاريخ التوقيف إلزامي';
     }
+    if (formData.status === 'نقل الى سجن' && !formData.transferPrison.trim()) {
+      newErrors.transferPrison = 'يرجى تحديد السجن المنقول إليه';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -206,6 +288,8 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
       detentionCell: formData.detentionCell.trim(),
       status: formData.status,
       releaseDate: formData.status === 'أخلي سبيله' ? (formData.releaseDate || todayStr) : undefined,
+      transferPrison: formData.status === 'نقل الى سجن' ? formData.transferPrison.trim() : undefined,
+      transferDate: formData.status === 'نقل الى سجن' ? (formData.transferDate || todayStr) : undefined,
       detainedForUnit: formData.detainedForUnit.trim(),
       crimeType: formData.crimeType.trim(),
       firstName: formData.firstName.trim(),
@@ -250,9 +334,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               <h2 className="text-lg font-bold">
                 {detaineeToEdit ? 'تعديل استمارة الموقوف' : 'تسجيل موقوف جديد في النظارة'}
               </h2>
-              <p className="text-xs text-slate-300">
-                يرجى ملء الحقول الرسمية بدقة لحفظها في السجل الأمني الموحد
-              </p>
+              
             </div>
           </div>
           <button
@@ -271,7 +353,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
           <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
               <Building2 className="w-4 h-4 text-blue-600" />
-              <span>1. بيانات التوقيف والوضع القانوني والنظارة</span>
+              <span>بيانات التوقيف</span>
             </h3>
 
             {/* Row A: حالة الموقوف - موقوف لصالح - نوع الجرم */}
@@ -281,18 +363,18 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   حالة الموقوف <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, status: 'موقوف' })}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
                       formData.status === 'موقوف'
                         ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-xs ring-1 ring-rose-300'
                         : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <span className={`w-2 h-2 rounded-full ${formData.status === 'موقوف' ? 'bg-rose-600 animate-pulse' : 'bg-slate-400'}`}></span>
-                    <span>موقوف</span>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${formData.status === 'موقوف' ? 'bg-rose-600 animate-pulse' : 'bg-slate-400'}`}></span>
+                    <span className="truncate">موقوف</span>
                   </button>
 
                   <button
@@ -302,14 +384,31 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                       status: 'أخلي سبيله',
                       releaseDate: formData.releaseDate || todayStr 
                     })}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
                       formData.status === 'أخلي سبيله'
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-xs ring-1 ring-emerald-300'
                         : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    <CheckCircle2 className={`w-3.5 h-3.5 ${formData.status === 'أخلي سبيله' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    <span>أخلي سبيله</span>
+                    <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${formData.status === 'أخلي سبيله' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span className="truncate">أخلي سبيله</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ 
+                      ...formData, 
+                      status: 'نقل الى سجن',
+                      transferDate: formData.transferDate || todayStr 
+                    })}
+                    className={`py-2 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                      formData.status === 'نقل الى سجن'
+                        ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-xs ring-1 ring-blue-300'
+                        : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ArrowRightLeft className={`w-3.5 h-3.5 shrink-0 ${formData.status === 'نقل الى سجن' ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <span className="truncate">نقل الى سجن</span>
                   </button>
                 </div>
 
@@ -330,6 +429,73 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                     />
                   </div>
                 )}
+
+                {/* تفاصيل النقل إلى سجن - تظهر فقط عند اختيار نقل الى سجن */}
+                {formData.status === 'نقل الى سجن' && (
+                  <div className="mt-2.5 p-2.5 bg-blue-50/90 rounded-lg border border-blue-300 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div>
+                      <label className="block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-700" />
+                        <span>تاريخ النقل</span>
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.transferDate || todayStr}
+                        onChange={(e) => setFormData({ ...formData, transferDate: e.target.value })}
+                        className="w-full py-1.5 px-2.5 bg-white border border-blue-300 rounded-md text-xs sm:text-sm font-medium text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-blue-900 mb-1 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-blue-700" />
+                        <span>السجن المنقول إليه</span>
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        list="prisons-list"
+                        value={formData.transferPrison}
+                        onChange={(e) => {
+                          setFormData({ ...formData, transferPrison: e.target.value });
+                          if (errors.transferPrison) {
+                            setErrors({ ...errors, transferPrison: '' });
+                          }
+                        }}
+                        placeholder="اختر أو اكتب اسم السجن..."
+                        className={`w-full py-1.5 px-2.5 bg-white border rounded-md text-xs sm:text-sm font-medium text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs ${
+                          errors.transferPrison ? 'border-red-500 ring-1 ring-red-400' : 'border-blue-300'
+                        }`}
+                        required
+                      />
+                      {errors.transferPrison && (
+                        <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.transferPrison}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <datalist id="prisons-list">
+                  <option value="سجن رومية المركزي" />
+                  <option value="سجن القبة (طرابلس)" />
+                  <option value="سجن زحلة" />
+                  <option value="سجن بعبدا" />
+                  <option value="سجن صيدا" />
+                  <option value="سجن جزين" />
+                  <option value="سجن النبطية" />
+                  <option value="سجن عاليه" />
+                  <option value="سجن أميون" />
+                  <option value="سجن البترون" />
+                  <option value="سجن حلبا" />
+                  <option value="سجن جب جنين" />
+                  <option value="سجن راشيا" />
+                  <option value="سجن بعلبك" />
+                  <option value="سجن ضهر الباشق" />
+                  <option value="سجن نساء بعبدا" />
+                  <option value="سجن نساء طرابلس" />
+                </datalist>
               </div>
 
               {/* موقوف لصالح: (اختيار اسم القطعة) */}
@@ -406,7 +572,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Detention Date */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  1. تاريخ التوقيف <span className="text-red-500">*</span>
+                  تاريخ التوقيف <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -426,7 +592,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Detention Cell */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  2. نظارة التوقيف <span className="text-red-500">*</span>
+                  نظارة التوقيف <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -459,7 +625,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Info Recording Date */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  13. تاريخ تدوين المعلومة
+                  تاريخ تدوين المعلومة
                 </label>
                 <input
                   type="date"
@@ -475,7 +641,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
           <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
               <User className="w-4 h-4 text-blue-600" />
-              <span>2. البيانات الشخصية والهوية الرسمية للموقوف</span>
+              <span>البيانات الشخصية والهوية الرسمية للموقوف</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -483,7 +649,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* First Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  3. اسم الموقوف <span className="text-red-500">*</span>
+                  اسم الموقوف <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -502,7 +668,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Father Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  4. اسم الاب
+                  اسم الاب
                 </label>
                 <input
                   type="text"
@@ -516,7 +682,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Last Name / Family */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  5. الشهرة ( العائلة) <span className="text-red-500">*</span>
+                  الشهرة (العائلة) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -535,7 +701,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Mother Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  6. اسم الام
+                  اسم الام
                 </label>
                 <input
                   type="text"
@@ -546,10 +712,140 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
                 />
               </div>
 
+              {/* Notification Banner when existing detainee data is imported */}
+              {importNotification && (
+                <div className="col-span-1 sm:col-span-2 md:col-span-4 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{importNotification}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setImportNotification(null)}
+                    className="text-emerald-700 hover:text-emerald-950 p-1 font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Matching Existing Detainee Alert & Selection Widget */}
+              {matchingDetainees.length > 0 && !isDuplicateDismissed && (
+                <div className="col-span-1 sm:col-span-2 md:col-span-4 p-4 bg-gradient-to-r from-amber-50 via-amber-50 to-orange-50 border-2 border-amber-400 rounded-xl shadow-xs animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 mb-3 border-b border-amber-200">
+                    <div className="flex items-center gap-2.5">
+                      <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      </span>
+                      <div>
+                        <h4 className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                          <span>تنبيه: تم العثور على اسم مطابق مسجل سابقاً ({matchingDetainees.length})</span>
+                        </h4>
+                        <p className="text-xs text-amber-800">
+                          الاسم: <strong className="text-amber-950 font-bold">{formData.firstName.trim()} {formData.lastName.trim()}</strong> مسجل مسبقاً في القيود. هل هو نفس الشخص؟
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsDuplicateDismissed(true)}
+                      className="self-end sm:self-center px-3 py-1.5 rounded-lg text-xs font-bold text-amber-800 hover:text-amber-950 bg-amber-200/80 hover:bg-amber-200 transition cursor-pointer flex items-center gap-1 shrink-0"
+                      title="تجاهل والمتابعة كشخص جديد آخر"
+                    >
+                      <span>شخص جديد آخر (تجاهل)</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-72 overflow-y-auto pl-1">
+                    {matchingDetainees.map((match) => {
+                      const photo = match.photos?.[0];
+                      return (
+                        <div
+                          key={match.id}
+                          className="bg-white border-2 border-amber-300 hover:border-blue-500 rounded-xl p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs transition"
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Photo thumbnail or avatar */}
+                            <div className="w-14 h-14 rounded-lg border border-slate-200 bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
+                              {photo ? (
+                                <img src={photo} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-7 h-7 text-slate-400" />
+                              )}
+                            </div>
+
+                            {/* Personal Details */}
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h5 className="text-sm font-bold text-slate-900">
+                                  {match.firstName} {match.fatherName} {match.lastName}
+                                </h5>
+                                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                  match.status === 'أخلي سبيله'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : match.status === 'نقل الى سجن'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-rose-100 text-rose-800'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    match.status === 'أخلي سبيله'
+                                      ? 'bg-emerald-600'
+                                      : match.status === 'نقل الى سجن'
+                                      ? 'bg-blue-600'
+                                      : 'bg-rose-600'
+                                  }`}></span>
+                                  {match.status || 'موقوف'}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-600">
+                                <span>اسم الأم: <strong className="text-slate-800 font-semibold">{match.motherName || 'غير مسجل'}</strong></span>
+                                <span>•</span>
+                                <span>الولادة: <strong className="text-slate-800 font-semibold">{match.placeOfBirth || '---'} {match.dateOfBirth ? `(${match.dateOfBirth})` : ''}</strong></span>
+                                <span>•</span>
+                                <span>الجنسية: <strong className="text-slate-800 font-semibold">{match.nationality || 'لبناني'}</strong></span>
+                                {match.phoneNumber && (
+                                  <>
+                                    <span>•</span>
+                                    <span>الهاتف: <strong className="text-slate-800 font-mono font-semibold" dir="ltr">{match.phoneNumber}</strong></span>
+                                  </>
+                                )}
+                              </div>
+
+                              <div className="text-[11px] text-slate-500">
+                                <span>آخر قيد: </span>
+                                <span className="font-semibold text-slate-700">{match.detentionCell || 'نظارة غير محددة'}</span>
+                                <span> بتاريخ </span>
+                                <span className="font-mono text-slate-700">{match.detentionDate || '---'}</span>
+                                {match.crimeType && (
+                                  <span> - الجرم: <span className="font-semibold text-slate-700">{match.crimeType}</span></span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Select this person button */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectExisting(match)}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition shrink-0 cursor-pointer"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            <span>نعم، هو نفس الشخص (استيراد كافة بياناته)</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Place of Birth */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  7. مكان الولادة
+                  مكان الولادة
                 </label>
                 <input
                   type="text"
@@ -563,7 +859,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Date of Birth */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  8. تاريخ الولادة
+                  تاريخ الولادة
                 </label>
                 <input
                   type="date"
@@ -576,7 +872,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Gender */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  9. الجنس
+                  الجنس
                 </label>
                 <select
                   value={formData.gender}
@@ -591,7 +887,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Nationality */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  10. الجنسية
+                  الجنسية
                 </label>
                 <input
                   type="text"
@@ -609,14 +905,14 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
           <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
               <Phone className="w-4 h-4 text-blue-600" />
-              <span>3. بيانات الاتصال والإقامة السابقة</span>
+              <span>بيانات الاتصال والإقامة السابقة</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  11. رقم الهاتف
+                  رقم الهاتف
                 </label>
                 <input
                   type="tel"
@@ -632,7 +928,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
               {/* Previous Address */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  12. العنوان السابق
+                  العنوان السابق
                 </label>
                 <input
                   type="text"
@@ -650,7 +946,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-blue-600" />
-                <span>14. صور الموقوف </span>
+                <span>صور الموقوف</span>
               </h3>
             </div>
 
@@ -751,7 +1047,7 @@ export const DetaineeFormModal: React.FC<DetaineeFormModalProps> = ({
           <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-2">
               <FileText className="w-4 h-4 text-blue-600" />
-              <span>15. خانة ملاحظات</span>
+              <span>ملاحظات</span>
             </h3>
             <textarea
               rows={3}

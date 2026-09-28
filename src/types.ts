@@ -6,8 +6,10 @@ export interface Detainee {
   id: string; // Unique identifier
   detentionDate: string; // 1. تاريخ التوقيف (YYYY-MM-DD)
   detentionCell: string; // 2. نظارة التوقيف (Detention Cell / Lockup)
-  status: 'موقوف' | 'أخلي سبيله'; // حالة الموقوف (موقوف / أخلي سبيله)
+  status: 'موقوف' | 'أخلي سبيله' | 'نقل الى سجن'; // حالة الموقوف (موقوف / أخلي سبيله / نقل الى سجن)
   releaseDate?: string; // تاريخ إخلاء السبيل (YYYY-MM-DD) في حال كان مخلى سبيله
+  transferPrison?: string; // السجن المنقول إليه في حال تم نقله إلى سجن
+  transferDate?: string; // تاريخ النقل إلى السجن (YYYY-MM-DD)
   detainedForUnit: string; // موقوف لصالح (اختيار اسم القطعة)
   crimeType: string; // نوع الجرم (كتابة الجرم)
   firstName: string; // 3. اسم الموقوف (First Name)

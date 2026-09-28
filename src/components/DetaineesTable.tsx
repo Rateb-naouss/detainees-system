@@ -206,19 +206,41 @@ export const DetaineesTable: React.FC<DetaineesTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Status Badge: موقوف \ أخلي سبيله */}
+                    {/* Status Badge: موقوف \ أخلي سبيله \ نقل الى سجن */}
                     <td className="py-3 px-3 text-center">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
                         d.status === 'أخلي سبيله'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                          : d.status === 'نقل الى سجن'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-300'
                           : 'bg-rose-50 text-rose-700 border border-rose-300'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${d.status === 'أخلي سبيله' ? 'bg-emerald-600' : 'bg-rose-600'}`}></span>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          d.status === 'أخلي سبيله' 
+                            ? 'bg-emerald-600' 
+                            : d.status === 'نقل الى سجن'
+                            ? 'bg-blue-600'
+                            : 'bg-rose-600'
+                        }`}></span>
                         <span>{d.status || 'موقوف'}</span>
                       </span>
                       {d.status === 'أخلي سبيله' && d.releaseDate && (
                         <div className="text-[10px] text-emerald-700 font-mono mt-1 font-medium" title="تاريخ إخلاء السبيل">
                           {d.releaseDate}
+                        </div>
+                      )}
+                      {d.status === 'نقل الى سجن' && (
+                        <div className="mt-1 space-y-0.5">
+                          {d.transferPrison && (
+                            <div className="text-[11px] font-bold text-blue-900 leading-tight" title="السجن المنقول إليه">
+                              {d.transferPrison}
+                            </div>
+                          )}
+                          {d.transferDate && (
+                            <div className="text-[10px] text-blue-700 font-mono font-medium" title="تاريخ النقل">
+                              {d.transferDate}
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>

@@ -9,9 +9,10 @@ interface StatsCardsProps {
 export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
   const total = detainees.length;
 
-  // Active / Released Status
-  const currentlyDetained = detainees.filter(d => d.status !== 'أخلي سبيله').length;
+  // Active / Released / Transferred Status
+  const currentlyDetained = detainees.filter(d => d.status === 'موقوف' || !d.status).length;
   const releasedCount = detainees.filter(d => d.status === 'أخلي سبيله').length;
+  const transferredCount = detainees.filter(d => d.status === 'نقل الى سجن').length;
 
   // Males & Females
   const malesCount = detainees.filter(d => d.gender === 'ذكر').length;
@@ -41,7 +42,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
             <h3 className="text-2xl font-bold text-slate-900">{total}</h3>
             <span className="text-xs text-slate-400">سجل</span>
           </div>
-          <div className="flex items-center gap-2 mt-1.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs">
             <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
               {currentlyDetained} موقوف
@@ -50,6 +51,12 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ detainees }) => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
               {releasedCount} أخلي سبيله
             </span>
+            {transferredCount > 0 && (
+              <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                {transferredCount} نُقل لسجن
+              </span>
+            )}
           </div>
         </div>
         <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
