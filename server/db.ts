@@ -3,14 +3,45 @@ import path from 'path';
 import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentDir =
+  typeof __dirname !== 'undefined'
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url));
 
-// Path to SQLite database file
-export const DB_PATH = path.resolve(__dirname, '../detainees.db');
-export const UPLOADS_DIR = path.resolve(__dirname, '../uploads/photos');
+let DATA_BASE_DIR = process.env.APP_DATA_DIR
+  ? path.resolve(process.env.APP_DATA_DIR)
+  : path.resolve(currentDir, '..');
 
-// Ensure uploads directory exists
+// Path to SQLite database file and uploads folder
+export let DB_PATH = path.join(DATA_BASE_DIR, 'detainees.db');
+export let UPLOADS_DIR = path.join(DATA_BASE_DIR, 'uploads', 'photos');
+
+export function getDbPath(): string {
+  return DB_PATH;
+}
+
+export function getUploadsDir(): string {
+  return UPLOADS_DIR;
+}
+
+export function getDataBaseDir(): string {
+  return DATA_BASE_DIR;
+}
+
+/**
+ * Configures the writable data directory (used by Electron to store data in userData)
+ */
+export function configureDataPaths(baseDir: string): void {
+  DATA_BASE_DIR = path.resolve(baseDir);
+  DB_PATH = path.join(DATA_BASE_DIR, 'detainees.db');
+  UPLOADS_DIR = path.join(DATA_BASE_DIR, 'uploads', 'photos');
+
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+}
+
+// Ensure uploads directory exists on initial load
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
@@ -19,13 +50,39 @@ let SQL: SqlJsStatic | null = null;
 let dbInstance: Database | null = null;
 
 /**
+ * Resolves sql-wasm.wasm across dev, tsx, Vite/esbuild, and packaged Electron ASAR
+ */
+function resolveSqlWasmPath(file: string): string {
+  const candidates = [
+    path.join(currentDir, file).replace('app.asar', 'app.asar.unpacked'),
+    path.join(currentDir, file),
+    path.resolve(currentDir, '../node_modules/sql.js/dist', file),
+    path.resolve(process.cwd(), 'node_modules/sql.js/dist', file),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return file;
+}
+
+/**
  * Initializes the SQLite database (detainees.db)
  */
 export async function initDB(): Promise<Database> {
   if (dbInstance) return dbInstance;
 
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+
   if (!SQL) {
-    SQL = await initSqlJs();
+    SQL = await initSqlJs({
+      locateFile: resolveSqlWasmPath,
+    });
   }
 
   if (fs.existsSync(DB_PATH)) {
@@ -537,7 +594,7 @@ export async function deleteDetaineeRecord(id: string): Promise<boolean> {
     const row = stmt.getAsObject() as Record<string, unknown>;
     [row.photo_0, row.photo_1, row.photo_2].forEach((photoUrl) => {
       if (typeof photoUrl === 'string' && photoUrl.startsWith('/uploads/photos/')) {
-        const localPath = path.join(__dirname, '..', photoUrl);
+        const localPath = path.join(UPLOADS_DIR, path.basename(photoUrl));
         if (fs.existsSync(localPath)) {
           try {
             fs.unlinkSync(localPath);

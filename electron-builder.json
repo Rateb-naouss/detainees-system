@@ -1,0 +1,49 @@
+{
+  "appId": "lb.isf.detainees.registry",
+  "productName": "نظام إدارة الموقوفين - قوى الأمن الداخلي",
+  "copyright": "قوى الأمن الداخلي - مركز القيادة والتحكم",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "build/icon.png",
+    "build/icon.ico",
+    "package.json"
+  ],
+  "asarUnpack": [
+    "dist-electron/sql-wasm.wasm"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "نظام إدارة الموقوفين"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "build/icon.png",
+    "category": "Office"
+  },
+  "mac": {
+    "target": ["dmg"],
+    "icon": "build/icon.png",
+    "category": "public.app-category.utilities"
+  }
+}

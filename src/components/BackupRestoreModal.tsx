@@ -3,14 +3,13 @@ import {
   X, 
   Download, 
   Upload, 
-  RotateCcw, 
   Database, 
-  HardDrive, 
   CheckCircle2, 
   AlertCircle,
-  FileCode
+  FolderOpen
 } from 'lucide-react';
 import { Detainee } from '../types';
+import { ElectronAppInfo } from '../types/electron';
 import { downloadBackupJSON, importBackupJSON } from '../utils/storage';
 import { 
   downloadSQLiteDB, 
@@ -35,12 +34,16 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; isError?: boolean } | null>(null);
   const [dbInfo, setDbInfo] = useState<DatabaseInfo | null>(null);
+  const [electronInfo, setElectronInfo] = useState<ElectronAppInfo | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       getDatabaseInfo().then((info) => {
         if (info) setDbInfo(info);
       });
+      if (window.electronAPI?.isElectron) {
+        window.electronAPI.getAppInfo().then(setElectronInfo).catch(() => {});
+      }
     }
   }, [isOpen]);
 
@@ -135,6 +138,18 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
           <p className="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-800/80 leading-relaxed">
             يتم تخزين السجلات في ملف حقيقي <code className="text-emerald-400 font-mono">detainees.db</code> وتخزين الصور المحسّنة في مجلد التخزين المخصص <code className="text-emerald-400 font-mono">uploads/photos</code> دون التأثير على سرعة الاستعلامات.
           </p>
+
+          {window.electronAPI?.isElectron && (electronInfo?.dbPath || dbInfo?.dbPath) && (
+            <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 text-[11px]">
+              <span className="text-slate-400 block mb-1">مسار التخزين المحلي على الجهاز:</span>
+              <code
+                dir="ltr"
+                className="block bg-slate-950/70 text-emerald-300 font-mono px-2.5 py-1.5 rounded-lg break-all select-all text-[10px]"
+              >
+                {electronInfo?.dbPath || dbInfo?.dbPath}
+              </code>
+            </div>
+          )}
         </div>
 
         {/* Status Alert */}
@@ -218,6 +233,36 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             className="hidden"
             onChange={handleImportFile}
           />
+
+          {window.electronAPI?.isElectron && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <button
+                onClick={() => window.electronAPI?.openDataFolder()}
+                className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 transition group cursor-pointer text-right"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition shrink-0">
+                  <FolderOpen className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-slate-800 truncate">فتح مجلد قاعدة البيانات</h4>
+                  <p className="text-[10px] text-slate-500 truncate">عرض detainees.db على الجهاز</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => window.electronAPI?.openPhotosFolder()}
+                className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 transition group cursor-pointer text-right"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition shrink-0">
+                  <FolderOpen className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-slate-800 truncate">فتح مجلد الصور المحفوظة</h4>
+                  <p className="text-[10px] text-slate-500 truncate">عرض مجلد uploads/photos</p>
+                </div>
+              </button>
+            </div>
+          )}
 
         </div>
 
