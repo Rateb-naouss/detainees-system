@@ -21,6 +21,7 @@ async function run() {
     target: 'node20',
     format: 'cjs',
     packages: 'external',
+    define: { 'import.meta.url': '""' },
     outfile: path.join(outDir, 'main.cjs'),
     sourcemap: false,
   });
