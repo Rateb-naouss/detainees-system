@@ -1,6 +1,7 @@
 {
   "appId": "lb.isf.detainees.registry",
   "productName": "نظام إدارة الموقوفين - قوى الأمن الداخلي",
+  "executableName": "ISF-Detainees-System",
   "copyright": "قوى الأمن الداخلي - مركز القيادة والتحكم",
   "directories": {
     "output": "release",
@@ -11,10 +12,14 @@
     "dist-electron/**/*",
     "build/icon.png",
     "build/icon.ico",
-    "package.json"
+    "package.json",
+    "!node_modules/**"
   ],
+  "electronLanguages": ["ar", "en-US"],
   "asarUnpack": [
-    "dist-electron/sql-wasm.wasm"
+    "dist-electron/sql-wasm.wasm",
+    "build/icon.ico",
+    "build/icon.png"
   ],
   "win": {
     "target": [
@@ -30,11 +35,18 @@
     "icon": "build/icon.ico"
   },
   "nsis": {
+    "artifactName": "ISF-Detainees-System-Setup-${version}.${ext}",
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico",
+    "installerHeaderIcon": "build/icon.ico",
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "نظام إدارة الموقوفين"
+  },
+  "portable": {
+    "artifactName": "ISF-Detainees-System-Portable-${version}.${ext}"
   },
   "linux": {
     "target": ["AppImage", "deb"],

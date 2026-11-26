@@ -16,6 +16,7 @@
     "electron:build-main": "node scripts/build-electron.mjs",
     "electron:dev": "node scripts/dev-electron.mjs",
     "electron:start": "npm run build && npm run electron:build-main && node scripts/ensure-electron.mjs && electron .",
+    "electron:shortcut": "npm run build && npm run electron:build-main && node scripts/ensure-electron.mjs && node scripts/create-desktop-shortcut.mjs",
     "electron:pack": "npm run build && npm run electron:build-main && electron-builder --dir",
     "electron:dist": "npm run build && npm run electron:build-main && electron-builder",
     "electron:dist:win": "npm run build && npm run electron:build-main && electron-builder --win"

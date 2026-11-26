@@ -41,11 +41,6 @@ export function configureDataPaths(baseDir: string): void {
   }
 }
 
-// Ensure uploads directory exists on initial load
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
 let SQL: SqlJsStatic | null = null;
 let dbInstance: Database | null = null;
 

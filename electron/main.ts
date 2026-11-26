@@ -189,7 +189,10 @@ function setupDownloadHandler() {
 }
 
 function createMainWindow(targetUrl: string) {
-  const iconPath = path.join(app.getAppPath(), 'build', 'icon.png');
+  const iconFile = process.platform === 'win32' ? 'icon.ico' : 'icon.png';
+  const rawIconPath = path.join(app.getAppPath(), 'build', iconFile);
+  const unpackedIconPath = rawIconPath.replace('app.asar', 'app.asar.unpacked');
+  const iconPath = fs.existsSync(unpackedIconPath) ? unpackedIconPath : rawIconPath;
   const preloadPath = path.join(currentDir, 'preload.cjs');
 
   mainWindow = new BrowserWindow({
